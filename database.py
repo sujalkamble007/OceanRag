@@ -74,6 +74,37 @@ retrieval_logs_table = Table(
     Column("run_at", DateTime, server_default=func.now()),
 )
 
+qa_logs_table = Table(
+    "qa_logs", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("query_text", Text, nullable=False),
+    Column("retriever_type", String(100)),
+    Column("embedding_model", String(100)),
+    Column("chunk_strategy", String(100)),
+    Column("top_k", Integer),
+    Column("llm_name", String(100)),
+    Column("llm_model_id", String(200)),
+    Column("context_chunks", JSON),
+    Column("prompt_text", Text),
+    Column("answer_text", Text),
+    Column("sources", JSON),
+    Column("input_tokens", Integer),
+    Column("output_tokens", Integer),
+    Column("latency_seconds", Float),
+    Column("cost_usd", Float),
+    Column("run_at", DateTime, server_default=func.now()),
+)
+
+model_comparisons_table = Table(
+    "model_comparisons", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("query_text", Text, nullable=False),
+    Column("retriever_type", String(100)),
+    Column("top_k", Integer),
+    Column("results", JSON),
+    Column("run_at", DateTime, server_default=func.now()),
+)
+
 
 # ─── Shared Engine (singleton) ──────────────────────────────────────────────
 _engine = None
@@ -103,7 +134,7 @@ def init_db(reset=False):
         metadata.drop_all(engine)
         print("🗑️  Dropped existing tables")
     metadata.create_all(engine)
-    print("✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs)")
+    print("✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs, qa_logs, model_comparisons)")
     return engine
 
 
@@ -214,8 +245,6 @@ def insert_experiment(experiment_data: dict) -> None:
 def insert_retrieval_log(log_data: dict) -> int:
     """
     Insert a retrieval run record into retrieval_logs.
-    log_data keys: query_text, retriever_type, embedding_model,
-                   chunk_strategy, top_k, results (list of dicts), latency_seconds
     Returns new log id.
     """
     engine = get_engine()
@@ -225,3 +254,111 @@ def insert_retrieval_log(log_data: dict) -> int:
         )
         conn.commit()
         return result.scalar()
+
+
+def insert_qa_log(qa_data: dict) -> int:
+    """
+    Insert a Q&A record into qa_logs.
+    Returns new record id.
+    """
+    engine = get_engine()
+    with engine.connect() as conn:
+        result = conn.execute(
+            qa_logs_table.insert().values(**qa_data).returning(qa_logs_table.c.id)
+        )
+        conn.commit()
+        return result.scalar()
+
+
+def insert_model_comparison(comparison_data: dict) -> int:
+    """
+    Insert a multi-model comparison record.
+    Returns new record id.
+    """
+    engine = get_engine()
+    with engine.connect() as conn:
+        result = conn.execute(
+            model_comparisons_table.insert().values(**comparison_data).returning(
+                model_comparisons_table.c.id
+            )
+        )
+        conn.commit()
+        return result.scalar()
+
+
+def get_qa_history(limit: int = 20) -> list:
+    """
+    Returns last `limit` rows from qa_logs ordered by run_at DESC.
+    """
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(
+                qa_logs_table.c.id,
+                qa_logs_table.c.query_text,
+                qa_logs_table.c.llm_name,
+                qa_logs_table.c.answer_text,
+                qa_logs_table.c.latency_seconds,
+                qa_logs_table.c.cost_usd,
+                qa_logs_table.c.run_at,
+            )
+            .order_by(qa_logs_table.c.run_at.desc())
+            .limit(limit)
+        ).fetchall()
+
+    return [
+        {
+            "id": r.id,
+            "query_text": r.query_text,
+            "llm_name": r.llm_name,
+            "answer_text": r.answer_text,
+            "latency_seconds": r.latency_seconds,
+            "cost_usd": r.cost_usd,
+            "run_at": str(r.run_at) if r.run_at else "",
+        }
+        for r in rows
+    ]
+
+
+def get_all_experiments() -> list:
+    """
+    Returns all rows from experiments table as list of dicts.
+    Ordered by run_at DESC.
+    """
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(experiments_table).order_by(experiments_table.c.run_at.desc())
+        ).fetchall()
+
+    columns = [c.name for c in experiments_table.columns]
+    return [dict(zip(columns, row)) for row in rows]
+
+
+def get_best_config() -> dict:
+    """
+    Returns single experiment row with highest composite score.
+    composite = (precision_at_k + recall_at_k + faithfulness + answer_relevancy) / 4
+    """
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(experiments_table).order_by(experiments_table.c.run_at.desc())
+        ).fetchall()
+
+    if not rows:
+        return {}
+
+    columns = [c.name for c in experiments_table.columns]
+    experiments = [dict(zip(columns, row)) for row in rows]
+
+    def composite(exp):
+        return (
+            (exp.get("precision_at_k") or 0) +
+            (exp.get("recall_at_k") or 0) +
+            (exp.get("faithfulness") or 0) +
+            (exp.get("answer_relevancy") or 0)
+        ) / 4
+
+    return max(experiments, key=composite)
+
