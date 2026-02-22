@@ -1,39 +1,51 @@
 # 🌊 OceanRAG — Deep-Sea Governance Research Assistant
 
-A **Retrieval-Augmented Generation (RAG)** pipeline for semantic search over ocean governance research papers. OceanRAG ingests PDFs, chunks text, generates vector embeddings, and stores them in a cloud vector database — enabling natural language queries across thousands of pages of deep-sea mining regulations, UNCLOS documentation, and environmental impact assessments.
+A **Retrieval-Augmented Generation (RAG)** pipeline for semantic search over ocean governance research papers. OceanRAG ingests PDFs, chunks text, generates vector embeddings, and stores them in Qdrant Cloud — enabling natural language queries across thousands of pages of deep-sea mining regulations, UNCLOS documentation, and environmental impact assessments.
 
 ---
 
 ## ✨ What It Does
 
+### Phase 1 — Document Ingestion & Indexing
 1. **Ingests** 104 ocean governance PDFs (7,333 pages) using LangChain
 2. **Chunks** documents into 37,013 overlapping text segments
 3. **Embeds** each chunk into a 384-dimensional vector using MiniLM
 4. **Stores** vectors in Qdrant Cloud for fast similarity search
 5. **Tracks** metadata (document → chunk → vector mapping) in PostgreSQL
-6. **Retrieves** the most relevant passages for any natural language query
+
+### Phase 2 — Retrieval Engine
+6. **Similarity Search** — Pure vector cosine similarity via Qdrant
+7. **MMR Search** — Max Marginal Relevance for diverse, non-redundant results
+8. **Hybrid Search** — BM25 keyword + vector score fusion (best of both worlds)
+9. **Logs** every retrieval run to PostgreSQL with latency metrics
+10. **Interactive Mode** — Query the system live from your terminal
 
 ```
-📄 PDFs → 🔪 Chunks → 🧠 Embeddings → 🔍 Qdrant Cloud → 💬 Answers
-                                         ↘ 🗄️ PostgreSQL (metadata)
+📄 PDFs → 🔪 Chunks → 🧠 Embeddings → 🔍 Qdrant Cloud → 💬 Ranked Results
+                                         ↘ 🗄️ PostgreSQL (metadata + logs)
 ```
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Project Structure
 
 ```
 OceanRAG/
 ├── config.py              # Environment & configuration
-├── database.py            # PostgreSQL (Neon) — tables, CRUD, batch inserts
+├── database.py            # PostgreSQL — tables, CRUD, batch inserts, retrieval logs
 ├── document_loader.py     # PDF loading with timeout protection
 ├── chunker.py             # Text splitting (RecursiveCharacterTextSplitter)
 ├── embedder.py            # HuggingFace embeddings (batch processing)
 ├── qdrant_store.py        # Qdrant Cloud — upsert, search, collection mgmt
-├── main.py                # Phase 1 orchestration pipeline (9 steps)
+├── main.py                # Phase 1 entry point (9-step pipeline)
+├── retriever.py           # Phase 2 — 3 retrieval strategies (similarity, MMR, hybrid)
+├── retrieval_logger.py    # Phase 2 — PostgreSQL logging + CSV export
+├── run_retrieval.py       # Phase 2 entry point (5-step pipeline + interactive mode)
 ├── .env                   # API keys & DB credentials (not committed)
 ├── docs/Publications/     # Source PDFs
-└── output/                # Chunk summaries (CSV)
+└── output/
+    ├── chunks_fixed_512.csv       # Chunk summaries
+    └── retrieval_results.csv      # Retrieval comparison results
 ```
 
 ---
@@ -46,9 +58,11 @@ OceanRAG/
 | **PDF Parsing** | LangChain + PyPDF | Extract text from research papers |
 | **Text Splitting** | RecursiveCharacterTextSplitter | Chunk documents into segments |
 | **Embeddings** | sentence-transformers/all-MiniLM-L6-v2 | 384-dim vector embeddings |
-| **Vector DB** | Qdrant Cloud | Similarity search (Cosine distance) |
-| **Metadata DB** | PostgreSQL (Neon) | Document & chunk metadata tracking |
+| **Vector DB** | Qdrant Cloud (v1.16) | Similarity search (Cosine distance) |
+| **Metadata DB** | PostgreSQL (Neon) | Document, chunk, and retrieval metadata |
 | **ORM** | SQLAlchemy | Database operations & connection pooling |
+| **Keyword Search** | rank-bm25 | BM25 scoring for hybrid search |
+| **Client Library** | qdrant-client v1.17 | Python SDK for Qdrant Cloud |
 
 ---
 
@@ -62,6 +76,7 @@ cd OceanRAG
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install rank-bm25
 ```
 
 ### 2. Configure Environment
@@ -84,25 +99,22 @@ POSTGRES_PASSWORD=your_password
 
 ### 3. Add Documents
 
-Place your PDF files in the `docs/` directory:
-
 ```bash
 mkdir -p docs/Publications
-# Copy your PDFs into docs/Publications/
+# Copy your ocean governance PDFs into docs/Publications/
 ```
 
-### 4. Run Phase 1 Pipeline
+### 4. Run Phase 1 — Ingest & Index
 
 ```bash
+source .venv/bin/activate
 python main.py
 ```
-
-This runs the full 9-step pipeline:
 
 | Step | What It Does | Time |
 |------|-------------|------|
 | 1 | Initialize PostgreSQL tables | ~2s |
-| 2 | Load PDFs + extract text | ~3 min |
+| 2 | Load PDFs + extract text | ~2 min |
 | 3 | Chunk text (fixed_512 strategy) | ~10s |
 | 4 | Connect to Qdrant Cloud | ~1s |
 | 5 | Generate embeddings (MiniLM) | ~4.5 min |
@@ -111,35 +123,76 @@ This runs the full 9-step pipeline:
 | 8 | Test retrieval queries | ~5s |
 | 9 | Print summary | instant |
 
-> **Note:** Steps 5-6 are skipped on subsequent runs if Qdrant already has vectors (idempotent design).
+> **Note:** Steps 5-6 are skipped on re-runs if Qdrant already has vectors.
+
+### 5. Run Phase 2 — Retrieval Engine
+
+```bash
+python run_retrieval.py
+```
+
+| Step | What It Does |
+|------|-------------|
+| 1 | Initialize from Phase 1 (reuse existing index) |
+| 2 | Ensure retrieval_logs table exists |
+| 3 | Test all 3 strategies on a sample query |
+| 4 | Compare latency across Top-K values (3, 5, 10) |
+| 5 | Interactive mode — query the system live |
 
 ---
 
-## 🔍 Example Queries & Results
+## 🔍 Retrieval Strategies
 
-```python
-from qdrant_store import get_qdrant_client, search_similar
-from embedder import load_embedding_model
-from config import QDRANT_COLLECTION_NAME, DEFAULT_EMBEDDING_CONFIG
+### 1. Similarity Search
+Pure vector cosine similarity — finds the k most similar vectors in Qdrant.
+- **Best for:** General semantic queries
+- **Speed:** Fastest
 
-client = get_qdrant_client()
-model = load_embedding_model(DEFAULT_EMBEDDING_CONFIG)
-vec = model.embed_query("What are the environmental obligations under UNCLOS?")
-search_similar(client, QDRANT_COLLECTION_NAME, vec, k=3)
+### 2. MMR Search (Max Marginal Relevance)
+Fetches candidates, then re-ranks to maximize diversity. Penalizes chunks that are too similar to already-selected results.
+- **Best for:** Getting diverse perspectives from different sources
+- **Speed:** Medium (requires fetching vectors for re-ranking)
+
+### 3. Hybrid Search
+Combines BM25 keyword scoring (sparse) + Qdrant vector search (dense). Both scores are normalized to [0, 1] and averaged with equal weighting.
+- **Best for:** Queries with specific technical terms + semantic meaning
+- **Speed:** Slowest (runs BM25 over all chunks)
+
+---
+
+## 📊 Example Output
+
 ```
+════════════════════════════════════════════════════════════
+  RETRIEVAL RESULTS
+  Query: "What are the environmental obligations under UNCLOS?"
+  Top-K: 5
+════════════════════════════════════════════════════════════
 
-**Output:**
-```
-🔍 Query: 'What are the environmental obligations under UNCLOS?'
+── SIMILARITY SEARCH (latency: 7.46s) ─────────────────────
   [1] Score: 0.7262 | Publications-30.pdf | Page 75
   [2] Score: 0.7257 | Publications-33.pdf | Page 186
   [3] Score: 0.7252 | Publications-51.pdf | Page 22
 
-🔍 Query: 'ISA regulations for deep-sea mining'
-  [1] Score: 0.8224 | Publications-56.pdf | Page 25
+── MMR SEARCH (latency: 1.66s) ─────────────────────────────
+  [1] Score: 0.7262 | Publications-30.pdf | Page 75
+  [2] Score: 0.7257 | Publications-33.pdf | Page 186
+  [3] Score: 0.6852 | Publications-84.pdf | Page 27    ← more diverse
 
-🔍 Query: 'Environmental Impact Assessment requirements'
-  [1] Score: 0.8495 | Publications-67.pdf | Page 163
+── HYBRID SEARCH (latency: 1.27s) ──────────────────────────
+  [1] Score: 0.9996 | Publications-33.pdf | Page 186   ← keyword + vector match
+  [2] Score: 0.5000 | Publications-30.pdf | Page 75
+  [3] Score: 0.4993 | Publications-51.pdf | Page 22
+```
+
+### Top-K Latency Comparison
+
+```
+K     | Similarity |      MMR |   Hybrid
+------+------------+---------+---------
+3     |    1.23s   |  3.40s  |  1.23s
+5     |    1.04s   |  1.56s  |  1.75s
+10    |    5.38s   |  6.82s  |  3.62s
 ```
 
 ---
@@ -155,15 +208,13 @@ search_similar(client, QDRANT_COLLECTION_NAME, vec, k=3)
 | Embedding model | all-MiniLM-L6-v2 (384 dimensions) |
 | Vector similarity | Cosine |
 | Qdrant vectors | 37,013 |
-| PostgreSQL records | 37,013 chunks + 104 documents |
+| PostgreSQL tables | documents, chunks, experiments, retrieval_logs |
 
 ---
 
-## ⚙️ Configuration Options
+## ⚙️ Configuration
 
-### Chunking Strategies
-
-Defined in `config.py` — switch by changing `DEFAULT_CHUNK_CONFIG`:
+### Chunking Strategies (`config.py`)
 
 | Strategy | Size | Overlap |
 |----------|------|---------|
@@ -184,37 +235,46 @@ Defined in `config.py` — switch by changing `DEFAULT_CHUNK_CONFIG`:
 
 ---
 
-## 📁 Database Schema
+## 🗄️ Database Schema
 
-### `documents` table
+### `documents`
 | Column | Type | Description |
 |--------|------|-------------|
 | id | SERIAL PK | Auto-increment ID |
 | filename | VARCHAR (UNIQUE) | PDF filename |
-| filepath | VARCHAR | Full path to file |
+| filepath | VARCHAR | Full path |
 | total_pages | INTEGER | Page count |
 
-### `chunks` table
+### `chunks`
 | Column | Type | Description |
 |--------|------|-------------|
-| chunk_id | VARCHAR PK | Deterministic chunk identifier |
+| chunk_id | VARCHAR PK | Deterministic chunk ID |
 | document_id | FK → documents | Parent document |
 | filename | VARCHAR | Source PDF |
-| page_number | INTEGER | Page in source PDF |
+| page_number | INTEGER | Page in source |
 | chunk_strategy | VARCHAR | e.g., fixed_512 |
-| chunk_size / overlap | INTEGER | Chunking params |
-| char_count | INTEGER | Character count |
-| content_preview | TEXT | First 200 chars |
 | qdrant_point_id | VARCHAR | UUID in Qdrant |
 | embedding_model | VARCHAR | Model used |
+
+### `retrieval_logs`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL PK | Auto-increment ID |
+| query_text | TEXT | The search query |
+| retriever_type | VARCHAR | similarity / mmr / hybrid |
+| embedding_model | VARCHAR | Model used |
+| top_k | INTEGER | Number of results |
+| results | JSONB | Full ranked results |
+| latency_seconds | FLOAT | Query time |
+| run_at | TIMESTAMP | When the query ran |
 
 ---
 
 ## 🗺️ Roadmap
 
 - [x] **Phase 1** — Document ingestion & indexing pipeline
-- [ ] **Phase 2** — RAG query pipeline (LLM integration)
-- [ ] **Phase 3** — Web UI for interactive search
+- [x] **Phase 2** — Retrieval engine (3 strategies + logging)
+- [ ] **Phase 3** — LLM integration & answer generation
 - [ ] **Phase 4** — Experiment tracking & evaluation
 
 ---

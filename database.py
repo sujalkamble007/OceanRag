@@ -5,7 +5,7 @@ Uses a single shared engine for all operations (critical for remote DBs like Neo
 
 from sqlalchemy import (
     create_engine, MetaData, Table, Column, Integer, String, Text,
-    Float, DateTime, ForeignKey, select
+    Float, DateTime, ForeignKey, select, JSON
 )
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -61,6 +61,19 @@ experiments_table = Table(
     Column("run_at", DateTime, server_default=func.now()),
 )
 
+retrieval_logs_table = Table(
+    "retrieval_logs", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("query_text", Text, nullable=False),
+    Column("retriever_type", String(100)),
+    Column("embedding_model", String(100)),
+    Column("chunk_strategy", String(100)),
+    Column("top_k", Integer),
+    Column("results", JSON),
+    Column("latency_seconds", Float),
+    Column("run_at", DateTime, server_default=func.now()),
+)
+
 
 # ─── Shared Engine (singleton) ──────────────────────────────────────────────
 _engine = None
@@ -90,7 +103,7 @@ def init_db(reset=False):
         metadata.drop_all(engine)
         print("🗑️  Dropped existing tables")
     metadata.create_all(engine)
-    print("✅ PostgreSQL tables ready (documents, chunks, experiments)")
+    print("✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs)")
     return engine
 
 
@@ -196,3 +209,19 @@ def insert_experiment(experiment_data: dict) -> None:
             experiments_table.insert().values(**experiment_data)
         )
         conn.commit()
+
+
+def insert_retrieval_log(log_data: dict) -> int:
+    """
+    Insert a retrieval run record into retrieval_logs.
+    log_data keys: query_text, retriever_type, embedding_model,
+                   chunk_strategy, top_k, results (list of dicts), latency_seconds
+    Returns new log id.
+    """
+    engine = get_engine()
+    with engine.connect() as conn:
+        result = conn.execute(
+            retrieval_logs_table.insert().values(**log_data).returning(retrieval_logs_table.c.id)
+        )
+        conn.commit()
+        return result.scalar()
