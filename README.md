@@ -39,8 +39,8 @@ I wanted to deeply understand how a complex RAG pipeline actually works. Not by 
 - 🧠 **Embeds** text into 384-dimensional mathematical vectors
 - 🗂️ **Indexes** everything into a highly scalable vector database (Qdrant)
 - ⚖️ **Retrieves** the perfect context using Hybrid Search (Vector + BM25 keyword matching)
-- 🤖 **Generates** grounded, accurate answers using state-of-the-art open weights LLMs (Llama 3, Qwen, Mistral)
-- 📊 **Evaluates** itself using automated NLP and RAGAS framework metrics to find the statistically best configuration
+- 🤖 **Generates** grounded, accurate answers using state-of-the-art open weights LLMs (Llama 3.3, Qwen 2.5, Zephyr)
+- 📊 **Evaluates** itself using automated NLP and optional RAGAS metrics to find the statistically best configuration
 
 Every part of the pipeline — from the initial PDF parsing to the final evaluation matrix — was built to be fast, modular, and observable.
 
@@ -90,14 +90,15 @@ You now have a permanent audit trail of exactly how the AI arrived at its conclu
 
 ### 🤖 Multi-LLM Generation & Router
 Easily swap the "brain" of the system. OceanRAG comes preconfigured to seamlessly route between:
-- **Groq API**: `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `qwen3-32b`, `llama-4-scout-17b` — ultra-fast inference context generation.
-- **HuggingFace API**: `Mistral-Nemo`, `Phi-3.5-mini` — Free inference alternatives.
+- **Groq API**: `llama-3.3-70b-versatile`, `llama-3.1-8b-instant` — ultra-fast inference context generation.
+- **HuggingFace API**: `Qwen/Qwen2.5-72B-Instruct`, `HuggingFaceH4/zephyr-7b-beta` — Free, high-quality open-source alternatives.
 
 ### 📈 Evaluation Matrix (Phase 4)
 How do you know if your RAG is actually good? OceanRAG evaluates *itself*.
 The Evaluation Module automatically tests every combination of chunking strategy, embedding model, retriever, and LLM against a synthetic test set, outputting a composite score of:
-- **Retrieval Metrics**: Precision@K, Recall@K, Mean Reciprocal Rank (MRR), Hit Rate
-- **RAGAS Metrics**: Faithfulness, Answer Relevancy, Context Precision, Context Recall
+- **Retrieval Metrics**: Precision@K, Recall@K, Mean Reciprocal Rank (MRR), Hit Rate (Instant)
+- **NLP Metrics**: ROUGE-L, BLEU, BERTScore (Instant)
+- **RAGAS Metrics (Optional)**: Faithfulness, Answer Relevancy (Slower, requires LLM calls)
 - **NLP Metrics**: ROUGE-L, BLEU, BERTScore
 
 ---
@@ -119,6 +120,7 @@ cd OceanRAG
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -e .  # Install the oceanrag package
 ```
 
 **2. Set up your `.env` file**
@@ -144,10 +146,15 @@ GROQ_API_KEY=your_groq_key
 Assuming you have PDFs in `docs/Publications/`, run the ingestion and interact with it:
 ```bash
 # Ingest docs into the DB (only need to do this once)
-python main.py
+python scripts/ingest.py
 
 # Ask questions in the interactive terminal
-python run_generation.py
+python scripts/generate.py
+# Run evaluation (assumes you have a test set)
+# Run full evaluation (RAGAS + Latency + Context) - takes ~70 min
+python run_phase4.py
+# Run fast evaluation (Skip RAGAS for quick NLP/Retrieval benchmark) - takes ~2 mins
+python run_phase4.py --no-ragas
 ```
 
 ---

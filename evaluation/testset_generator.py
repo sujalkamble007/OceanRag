@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 import pandas as pd
 
-from config import DEFAULT_EMBEDDING_CONFIG
+from core.config import DEFAULT_EMBEDDING_CONFIG
 
 TESTSET_PATH = "./output/testset.csv"
 TESTSET_SIZE = 40
@@ -128,6 +128,7 @@ def load_testset() -> pd.DataFrame:
     """Load existing testset from CSV."""
     if Path(TESTSET_PATH).exists():
         df = pd.read_csv(TESTSET_PATH)
+        df.columns = df.columns.str.strip()  # Strip whitespace from column names
         print(f"📋 Loaded testset: {len(df)} questions from {TESTSET_PATH}")
         return df
     raise FileNotFoundError(
@@ -140,6 +141,7 @@ def load_testset() -> pd.DataFrame:
 def validate_testset(df: pd.DataFrame) -> pd.DataFrame:
     """Drop empty/duplicate rows and return cleaned testset."""
     orig = len(df)
+    df.columns = df.columns.str.strip()  # Strip whitespace from column names
 
     # Normalize column names from RAGAS format
     rename_map = {}

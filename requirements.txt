@@ -1,14 +1,43 @@
+# requirements.txt
+
+# Core
 langchain
 langchain-community
 langchain-huggingface
+langchain-groq
 langchain-qdrant
+
+# Vector DB
 qdrant-client
+
+# Document loading
 pypdf
 python-docx
 pandas
+
+# Embeddings
 sentence-transformers
-tqdm
-torch
+faiss-cpu
+rank_bm25
+
+# LLMs
+groq
+requests
+
+# Database
 psycopg2-binary
 sqlalchemy
 python-dotenv
+
+# Evaluation
+ragas
+datasets
+rouge-score
+nltk
+bert-score
+evaluate
+
+# Utils
+tqdm
+torch
+numpy

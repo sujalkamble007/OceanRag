@@ -1,5 +1,5 @@
 """
-database.py — PostgreSQL connection + table setup using SQLAlchemy.
+core/database.py — PostgreSQL connection + table setup using SQLAlchemy.
 Uses a single shared engine for all operations (critical for remote DBs like Neon).
 """
 
@@ -9,7 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from config import POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+from core.config import DATABASE_URL
 
 
 # ─── SQLAlchemy Metadata ────────────────────────────────────────────────────
@@ -116,14 +116,18 @@ def get_engine():
     if _engine is not None:
         return _engine
 
-    connection_string = (
-        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}"
-        f"@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    if not DATABASE_URL:
+        raise EnvironmentError("DATABASE_URL is not set.")
+    
+    # Neon Serverless Postgres drops idle connections, so we must recycle them 
+    # and pre-ping them before checkout to avoid "SSL SYSCALL error: EOF detected"
+    _engine = create_engine(
+        DATABASE_URL, 
+        echo=False, 
+        pool_pre_ping=True, 
+        pool_recycle=300,        # Recycle connections after 5 minutes
+        pool_use_lifo=True       # Use LIFO to reduce total connections to Neon
     )
-    # Use SSL for remote hosts (e.g. Neon), skip for localhost
-    if POSTGRES_HOST not in ("localhost", "127.0.0.1"):
-        connection_string += "?sslmode=require"
-    _engine = create_engine(connection_string, echo=False, pool_pre_ping=True)
     return _engine
 
 
@@ -145,7 +149,6 @@ def insert_document(filename: str, filepath: str, total_pages: int) -> int:
     """
     engine = get_engine()
     with engine.connect() as conn:
-        # Try to insert, on conflict (duplicate filename) do nothing
         stmt = pg_insert(documents_table).values(
             filename=filename,
             filepath=filepath,
@@ -154,7 +157,6 @@ def insert_document(filename: str, filepath: str, total_pages: int) -> int:
         conn.execute(stmt)
         conn.commit()
 
-        # Fetch the id (whether just inserted or already existing)
         result = conn.execute(
             select(documents_table.c.id).where(documents_table.c.filename == filename)
         ).scalar()
@@ -206,19 +208,16 @@ def get_chunk_stats() -> dict:
     """Returns summary: total chunks, chunks per strategy, chunks per document."""
     engine = get_engine()
     with engine.connect() as conn:
-        # Total chunks
         total = conn.execute(
             chunks_table.select().with_only_columns(func.count())
         ).scalar()
 
-        # Chunks per strategy
         strategy_rows = conn.execute(
             select(chunks_table.c.chunk_strategy, func.count().label("count"))
             .group_by(chunks_table.c.chunk_strategy)
         ).fetchall()
         per_strategy = {row[0]: row[1] for row in strategy_rows}
 
-        # Chunks per document (filename)
         doc_rows = conn.execute(
             select(chunks_table.c.filename, func.count().label("count"))
             .group_by(chunks_table.c.filename)
@@ -236,17 +235,12 @@ def insert_experiment(experiment_data: dict) -> None:
     """Inserts a row into the experiments table (used in Phase 4)."""
     engine = get_engine()
     with engine.connect() as conn:
-        conn.execute(
-            experiments_table.insert().values(**experiment_data)
-        )
+        conn.execute(experiments_table.insert().values(**experiment_data))
         conn.commit()
 
 
 def insert_retrieval_log(log_data: dict) -> int:
-    """
-    Insert a retrieval run record into retrieval_logs.
-    Returns new log id.
-    """
+    """Insert a retrieval run record into retrieval_logs. Returns new log id."""
     engine = get_engine()
     with engine.connect() as conn:
         result = conn.execute(
@@ -257,10 +251,7 @@ def insert_retrieval_log(log_data: dict) -> int:
 
 
 def insert_qa_log(qa_data: dict) -> int:
-    """
-    Insert a Q&A record into qa_logs.
-    Returns new record id.
-    """
+    """Insert a Q&A record into qa_logs. Returns new record id."""
     engine = get_engine()
     with engine.connect() as conn:
         result = conn.execute(
@@ -271,10 +262,7 @@ def insert_qa_log(qa_data: dict) -> int:
 
 
 def insert_model_comparison(comparison_data: dict) -> int:
-    """
-    Insert a multi-model comparison record.
-    Returns new record id.
-    """
+    """Insert a multi-model comparison record. Returns new record id."""
     engine = get_engine()
     with engine.connect() as conn:
         result = conn.execute(
@@ -287,9 +275,7 @@ def insert_model_comparison(comparison_data: dict) -> int:
 
 
 def get_qa_history(limit: int = 20) -> list:
-    """
-    Returns last `limit` rows from qa_logs ordered by run_at DESC.
-    """
+    """Returns last `limit` rows from qa_logs ordered by run_at DESC."""
     engine = get_engine()
     with engine.connect() as conn:
         rows = conn.execute(
@@ -321,10 +307,7 @@ def get_qa_history(limit: int = 20) -> list:
 
 
 def get_all_experiments() -> list:
-    """
-    Returns all rows from experiments table as list of dicts.
-    Ordered by run_at DESC.
-    """
+    """Returns all rows from experiments table as list of dicts, ordered by run_at DESC."""
     engine = get_engine()
     with engine.connect() as conn:
         rows = conn.execute(
@@ -361,4 +344,3 @@ def get_best_config() -> dict:
         ) / 4
 
     return max(experiments, key=composite)
-

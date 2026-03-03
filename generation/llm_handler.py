@@ -1,13 +1,13 @@
 """
-llm_handler.py — Unified LLM interface for Phase 3.
-HuggingFace Inference API (FREE) is primary. Groq/Anthropic are optional.
+generation/llm_handler.py — Unified LLM interface for Phase 3.
+HuggingFace Inference API (FREE) is primary. Groq is optional but faster.
 """
 
 import os
 import time
 import requests as http_requests
 
-from prompt_builder import build_hf_prompt_string
+from generation.prompt_builder import build_hf_prompt_string
 
 
 # ─── LLM Configurations ─────────────────────────────────────────────────────
@@ -59,52 +59,38 @@ LLM_CONFIGS = {
         "max_tokens": 500,
         "requires_key": "GROQ_API_KEY",
     },
-    # ── FREE: HuggingFace Inference API ──────────────────────
+    # ── FREE: HuggingFace Inference API (via InferenceClient SDK) ────
     "qwen2.5-72b": {
-        "name": "Qwen 2.5 72B Instruct",
+        "name": "Qwen 2.5 72B (HF)",
         "provider": "huggingface",
         "model_id": "Qwen/Qwen2.5-72B-Instruct",
-        "hf_url": "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-72B-Instruct",
         "input_cost_per_1k": 0.0,
         "output_cost_per_1k": 0.0,
         "max_tokens": 500,
         "requires_key": "HF_API_TOKEN",
     },
-    "mistral-nemo": {
-        "name": "Mistral Nemo 12B",
+    "zephyr-7b": {
+        "name": "Zephyr 7B (HF)",
         "provider": "huggingface",
-        "model_id": "mistralai/Mistral-Nemo-Instruct-2407",
-        "hf_url": "https://api-inference.huggingface.co/models/mistralai/Mistral-Nemo-Instruct-2407",
+        "model_id": "HuggingFaceH4/zephyr-7b-beta",
         "input_cost_per_1k": 0.0,
         "output_cost_per_1k": 0.0,
         "max_tokens": 500,
         "requires_key": "HF_API_TOKEN",
     },
-    "llama3.1-8b": {
-        "name": "LLaMA 3.1 8B (HF)",
+    "gemma-2-9b": {
+        "name": "Gemma 2 9B (HF)",
         "provider": "huggingface",
-        "model_id": "meta-llama/Llama-3.1-8B-Instruct",
-        "hf_url": "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct",
+        "model_id": "google/gemma-2-9b-it",
         "input_cost_per_1k": 0.0,
         "output_cost_per_1k": 0.0,
         "max_tokens": 500,
         "requires_key": "HF_API_TOKEN",
     },
-    "gemma2-2b": {
-        "name": "Gemma 2 2B (HF)",
+    "llama3.2-3b": {
+        "name": "LLaMA 3.2 3B (HF)",
         "provider": "huggingface",
-        "model_id": "google/gemma-2-2b-it",
-        "hf_url": "https://api-inference.huggingface.co/models/google/gemma-2-2b-it",
-        "input_cost_per_1k": 0.0,
-        "output_cost_per_1k": 0.0,
-        "max_tokens": 500,
-        "requires_key": "HF_API_TOKEN",
-    },
-    "phi3.5-mini": {
-        "name": "Phi 3.5 Mini (HF)",
-        "provider": "huggingface",
-        "model_id": "microsoft/Phi-3.5-mini-instruct",
-        "hf_url": "https://api-inference.huggingface.co/models/microsoft/Phi-3.5-mini-instruct",
+        "model_id": "meta-llama/Llama-3.2-3B-Instruct",
         "input_cost_per_1k": 0.0,
         "output_cost_per_1k": 0.0,
         "max_tokens": 500,
@@ -113,17 +99,13 @@ LLM_CONFIGS = {
 }
 
 
-# ─── Function 1: Get Available LLMs ─────────────────────────────────────────
-
 def get_available_llms() -> list:
     """Check which LLMs are available based on env var keys."""
     available = []
     print("\nAvailable LLMs:")
-
     for key, config in LLM_CONFIGS.items():
         env_key = config["requires_key"]
         token = os.getenv(env_key, "").strip()
-
         if token:
             provider_label = config["provider"].capitalize()
             cost_label = "FREE" if config["input_cost_per_1k"] == 0 else "PAID"
@@ -131,104 +113,40 @@ def get_available_llms() -> list:
             available.append({**config, "key": key})
         else:
             print(f"  ❌ {key:<16} — {config['name']:<26} (No {env_key} in .env)")
-
     print()
     return available
 
 
-# ─── Function 2: Call HuggingFace ────────────────────────────────────────────
-
 def call_huggingface(prompt: dict, llm_key: str, max_tokens: int) -> dict:
-    """
-    Call HuggingFace Inference API with retry for cold starts and rate limits.
-    """
+    """Call HuggingFace via InferenceClient SDK (auto-resolves correct endpoint)."""
     hf_token = os.getenv("HF_API_TOKEN", "").strip()
     if not hf_token:
-        raise ValueError(
-            "HF_API_TOKEN not set. Get free token from huggingface.co/settings/tokens"
-        )
+        raise ValueError("HF_API_TOKEN not set. Get free token from huggingface.co/settings/tokens")
 
     config = LLM_CONFIGS[llm_key]
-    headers = {"Authorization": f"Bearer {hf_token}"}
-
-    # Build single prompt string for HF API
-    # Use the retrieved chunks from the prompt dict
-    full_prompt = prompt["system"] + "\n\n" + prompt["user"]
-
-    payload = {
-        "inputs": full_prompt,
-        "parameters": {
-            "max_new_tokens": max_tokens,
-            "temperature": 0.1,
-            "return_full_text": False,
-        },
-    }
-
     try:
-        resp = http_requests.post(config["hf_url"], headers=headers, json=payload, timeout=60)
-
-        # Handle cold start (model loading)
-        if resp.status_code == 200:
-            data = resp.json()
-            if isinstance(data, dict) and "error" in data:
-                error_msg = str(data["error"]).lower()
-                if "loading" in error_msg or "currently loading" in error_msg:
-                    print("  ⏳ Model loading on HF servers (~20-30s first call)...")
-                    time.sleep(25)
-                    resp = http_requests.post(
-                        config["hf_url"], headers=headers, json=payload, timeout=60
-                    )
-        elif resp.status_code == 503:
-            body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
-            if "loading" in str(body).lower():
-                print("  ⏳ Model loading on HF servers (~20-30s first call)...")
-                time.sleep(25)
-                resp = http_requests.post(
-                    config["hf_url"], headers=headers, json=payload, timeout=60
-                )
-
-        # Handle rate limit
-        if resp.status_code == 429:
-            print("  ⚠️  HuggingFace rate limit hit. Waiting 60s...")
-            time.sleep(60)
-            resp = http_requests.post(
-                config["hf_url"], headers=headers, json=payload, timeout=60
-            )
-
-        resp.raise_for_status()
-
-        # Parse response
-        data = resp.json()
-        if isinstance(data, list) and len(data) > 0:
-            result = data[0].get("generated_text", "")
-        elif isinstance(data, dict):
-            result = data.get("generated_text", str(data))
-        else:
-            result = str(data)
-
-        # Strip prompt echo if return_full_text was ignored
-        if result.startswith(full_prompt):
-            result = result[len(full_prompt):]
-
-        result = result.strip()
-
-        return {"answer": result, "input_tokens": 0, "output_tokens": 0}
-
+        from huggingface_hub import InferenceClient
+        client = InferenceClient(api_key=hf_token)
+        result = client.chat.completions.create(
+            model=config["model_id"],
+            messages=[
+                {"role": "system", "content": prompt["system"]},
+                {"role": "user",   "content": prompt["user"]},
+            ],
+            max_tokens=max_tokens,
+            temperature=0.1,
+        )
+        answer = result.choices[0].message.content.strip()
+        return {"answer": answer, "input_tokens": 0, "output_tokens": 0}
     except Exception as e:
         return {"answer": f"HuggingFace API error: {str(e)}", "input_tokens": 0, "output_tokens": 0}
 
-
-# ─── Function 3: Call Groq ───────────────────────────────────────────────────
 
 def call_groq(prompt: dict, model_id: str, max_tokens: int) -> dict:
     """Call Groq API. Uses OpenAI SDK with Groq base_url."""
     try:
         from openai import OpenAI
-
-        client = OpenAI(
-            api_key=os.getenv("GROQ_API_KEY"),
-            base_url="https://api.groq.com/openai/v1",
-        )
+        client = OpenAI(api_key=os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1")
         response = client.chat.completions.create(
             model=model_id,
             messages=[
@@ -247,8 +165,6 @@ def call_groq(prompt: dict, model_id: str, max_tokens: int) -> dict:
         return {"answer": f"Groq API error: {str(e)}", "input_tokens": 0, "output_tokens": 0}
 
 
-# ─── Function 4: Calculate Cost ─────────────────────────────────────────────
-
 def calculate_cost(llm_key: str, input_tokens: int, output_tokens: int) -> float:
     """Calculate cost in USD. Returns 0.0 for HuggingFace (always free)."""
     config = LLM_CONFIGS[llm_key]
@@ -258,30 +174,21 @@ def calculate_cost(llm_key: str, input_tokens: int, output_tokens: int) -> float
             output_tokens / 1000 * config["output_cost_per_1k"])
 
 
-# ─── Function 6: Generate Answer (Main Interface) ───────────────────────────
-
 def generate_answer(prompt: dict, llm_key: str) -> dict:
-    """
-    Unified interface: route to the correct LLM provider.
-    All other code calls ONLY this function.
-    """
+    """Unified interface: route to the correct LLM provider."""
     if llm_key not in LLM_CONFIGS:
         raise ValueError(f"Unknown LLM key: {llm_key}. Available: {list(LLM_CONFIGS.keys())}")
 
     config = LLM_CONFIGS[llm_key]
-
-    # Check availability
     env_key = config["requires_key"]
     if not os.getenv(env_key, "").strip():
         raise ValueError(f"LLM '{llm_key}' requires {env_key} in .env")
 
     max_tokens = config["max_tokens"]
     provider = config["provider"]
-
     print(f"🤖 Calling {config['name']} ({provider})...")
 
     start = time.time()
-
     if provider == "huggingface":
         result = call_huggingface(prompt, llm_key, max_tokens)
     elif provider == "groq":
@@ -304,8 +211,6 @@ def generate_answer(prompt: dict, llm_key: str) -> dict:
         "cost_usd": cost,
     }
 
-
-# ─── Function 7: Print LLM Response ─────────────────────────────────────────
 
 def print_llm_response(generation_result: dict):
     """Print a formatted LLM response box."""

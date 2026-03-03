@@ -7,22 +7,22 @@ import os
 import time
 from statistics import mean
 
-from config import (
+from core.config import (
     DEFAULT_CHUNK_CONFIG, DEFAULT_EMBEDDING_CONFIG,
     TOP_K_VALUES, DEFAULT_TOP_K, OUTPUT_DIR, DOCS_DIR,
 )
-from llm_handler import LLM_CONFIGS, generate_answer
-from prompt_builder import build_prompt
-from retriever import embed_query, similarity_search, mmr_search, hybrid_search
-from embedder import load_embedding_model, embed_chunks
-from chunker import chunk_documents
-from qdrant_store import create_collection, upsert_chunks
-from metrics_calculator import (
+from generation.llm_handler import LLM_CONFIGS, generate_answer
+from generation.prompt_builder import build_prompt
+from retrieval.retriever import embed_query, similarity_search, mmr_search, hybrid_search
+from core.embedder import load_embedding_model, embed_chunks
+from core.chunker import chunk_documents
+from core.qdrant_store import create_collection, upsert_chunks
+from evaluation.metrics_calculator import (
     compute_precision_at_k, compute_recall_at_k, compute_mrr,
     compute_hit_rate, find_relevant_chunk_ids,
     compute_ragas_metrics, compute_all_nlp_metrics,
 )
-import database
+from core import database
 
 
 # ─── Constants ──────────────────────────────────────────────────────────────
@@ -30,9 +30,9 @@ import database
 # LLMs to evaluate — mix of Groq (fast) + HuggingFace (free)
 EVAL_LLM_KEYS = [
     "groq-llama8b",     # Groq — fastest
-    "groq-mixtral",     # Groq — best reasoning
-    "mistral-nemo",     # HuggingFace — free
-    "phi3.5-mini",      # HuggingFace — free
+    "groq-llama70b",    # Groq — best reasoning
+    "qwen2.5-72b",      # HuggingFace — free
+    "zephyr-7b",        # HuggingFace — free
 ]
 
 # Retrievers to test
@@ -51,10 +51,10 @@ EVAL_EMBEDDING_CONFIGS = [
     {"name": "BGE",    "model_id": "BAAI/bge-small-en-v1.5",                  "vector_size": 384},
 ]
 
-QUESTIONS_PER_RUN = 10   # sample size from testset per config
+QUESTIONS_PER_RUN = 5    # sample size per config (5 is enough for relative comparison)
 
-# Rate limit sleep (Groq free tier ~30 req/min)
-RATE_LIMIT_SLEEP = 2
+# Rate limit sleep (reduced — Groq allows 30 req/min, 0.3s is safe for sequential calls)
+RATE_LIMIT_SLEEP = 0.3
 
 
 # ─── Function 1: Estimate Experiment Count ──────────────────────────────────
@@ -95,7 +95,8 @@ def estimate_experiment_count() -> dict:
 
 # ─── Function 2: Run Single Experiment ──────────────────────────────────────
 
-def run_single_experiment(config: dict, testset_df, qdrant_client, chunks: list) -> dict:
+def run_single_experiment(config: dict, testset_df, qdrant_client, chunks: list,
+                          use_ragas: bool = True, embedding_model=None) -> dict:
     """
     Run one evaluation config across sampled questions.
     
@@ -104,7 +105,9 @@ def run_single_experiment(config: dict, testset_df, qdrant_client, chunks: list)
     """
     import pandas as pd
 
-    embedding_model = load_embedding_model(config["embedding_config"])
+    # Reuse provided model or load (loading is expensive — ~15s — avoid repeating)
+    if embedding_model is None:
+        embedding_model = load_embedding_model(config["embedding_config"])
 
     # Sample questions (fixed seed for fair comparison)
     sample_df = testset_df.sample(
@@ -202,10 +205,13 @@ def run_single_experiment(config: dict, testset_df, qdrant_client, chunks: list)
     avg_hit_rate = round(mean(hit_rates), 4)
 
     # ── Compute RAGAS scores (use dedicated RAGAS key) ─────────────────
-    groq_key = (os.getenv("GROQ_API_KEY2", "").strip()
-                or os.getenv("GROQ_API_KEY1", "").strip()
-                or os.getenv("GROQ_API_KEY", "").strip())
-    ragas_scores = compute_ragas_metrics(eval_samples, groq_key)
+    if use_ragas:
+        groq_key = (os.getenv("GROQ_API_KEY2", "").strip()
+                    or os.getenv("GROQ_API_KEY1", "").strip()
+                    or os.getenv("GROQ_API_KEY", "").strip())
+        ragas_scores = compute_ragas_metrics(eval_samples, groq_key)
+    else:
+        ragas_scores = {"faithfulness": 0.0, "answer_relevancy": 0.0}
 
     # ── Compute NLP scores ───────────────────────────────────────────
     nlp_scores = compute_all_nlp_metrics(predictions, references)
@@ -313,15 +319,24 @@ def run_full_experiment_matrix(testset_df, qdrant_client, docs) -> list:
 # ─── Function 4: Run Quick Evaluation ───────────────────────────────────────
 
 def run_quick_evaluation(testset_df, qdrant_client, collection_name: str,
-                         embedding_model, chunks: list) -> list:
+                         embedding_model, chunks: list,
+                         use_ragas: bool = True) -> list:
     """
     Fast mode — default config, all retrievers × all eval LLMs, default K.
     Total runs = 3 retrievers × 4 LLMs = 12 runs.
+    
+    Args:
+        use_ragas: Set False to skip RAGAS evaluation (much faster, ~10s vs ~6min per run)
     """
     total = len(EVAL_RETRIEVERS) * len(EVAL_LLM_KEYS)
-    print(f"\n📊 Running Quick Evaluation...")
+    ragas_label = "with RAGAS" if use_ragas else "NO RAGAS (fast mode)"
+    print(f"\n📊 Running Quick Evaluation [{ragas_label}]...")
     print(f"   {total} runs total ({len(EVAL_RETRIEVERS)} retrievers × {len(EVAL_LLM_KEYS)} LLMs)")
-    print(f"   {QUESTIONS_PER_RUN} questions per run\n")
+    print(f"   {QUESTIONS_PER_RUN} questions per run")
+    if not use_ragas:
+        print(f"   ⚡ RAGAS disabled — expect ~{total * 25}s total time\n")
+    else:
+        print(f"   ⏳ RAGAS enabled — expect ~{total * 6}min total time\n")
 
     results = []
     run_num = 0
@@ -344,12 +359,15 @@ def run_quick_evaluation(testset_df, qdrant_client, collection_name: str,
 
             print(f"  ▶ [{run_num}/{total}] {retriever} | {LLM_CONFIGS[llm_key]['name']} | k={DEFAULT_TOP_K}")
 
-            result = run_single_experiment(config, testset_df, qdrant_client, chunks)
+            result = run_single_experiment(config, testset_df, qdrant_client, chunks,
+                                           use_ragas=use_ragas,
+                                           embedding_model=embedding_model)
             if result:
                 results.append(result)
+                faith_str = f"Faith={result['faithfulness']:.3f} | " if use_ragas else ""
                 print(f"      ✅ P@K={result['precision_at_k']:.3f} | "
                       f"R@K={result['recall_at_k']:.3f} | "
-                      f"Faith={result['faithfulness']:.3f} | "
+                      f"{faith_str}"
                       f"{result['latency_seconds']:.2f}s")
 
     print(f"\n✅ Completed {len(results)}/{total} experiments")

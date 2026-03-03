@@ -1,5 +1,5 @@
 """
-document_loader.py — PDF loading + metadata extraction using LangChain.
+ingestion/document_loader.py — PDF loading + metadata extraction using LangChain.
 """
 
 import os
@@ -37,19 +37,17 @@ def load_documents(docs_dir: str, timeout_per_pdf: int = 60) -> list:
     skipped = []
     for pdf_file in tqdm(pdf_files, desc="Loading PDFs"):
         try:
-            # Set a timeout to skip PDFs that hang
             signal.signal(signal.SIGALRM, _timeout_handler)
             signal.alarm(timeout_per_pdf)
 
             loader = PyPDFLoader(str(pdf_file))
             pages = loader.load()
 
-            signal.alarm(0)  # Cancel the alarm
+            signal.alarm(0)
 
             for page in pages:
                 page.metadata["filename"] = pdf_file.name
                 page.metadata["filepath"] = str(pdf_file)
-                # PyPDFLoader uses 0-indexed 'page'; convert to 1-indexed
                 page.metadata["page_number"] = page.metadata.get("page", 0) + 1
 
             all_docs.extend(pages)

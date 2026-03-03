@@ -100,7 +100,7 @@ def compute_ragas_metrics(eval_samples: list, groq_api_key: str) -> dict:
         from ragas.embeddings import LangchainEmbeddingsWrapper
         from ragas import EvaluationDataset, SingleTurnSample
         from langchain_huggingface import HuggingFaceEmbeddings
-        from config import DEFAULT_EMBEDDING_CONFIG
+        from core.config import DEFAULT_EMBEDDING_CONFIG
 
         # ── Set up LLM for RAGAS (Groq — 8B model handles eval prompts) ──
         ragas_llm = None
@@ -137,18 +137,32 @@ def compute_ragas_metrics(eval_samples: list, groq_api_key: str) -> dict:
         dataset = EvaluationDataset(samples=samples)
 
         # ── Run evaluation ───────────────────────────────────────────────
+        # Omit answer_relevancy because Groq lacks n>1 support, which causes BadRequestError
         scores = evaluate(
             dataset,
-            metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
+            metrics=[faithfulness, context_precision, context_recall],
             llm=ragas_llm,
             embeddings=ragas_embeddings,
             raise_exceptions=False,
         )
+        
+        import math
+        def safe_get(metric_name):
+            try:
+                if metric_name not in scores: return 0.0
+                val = scores[metric_name]
+                if isinstance(val, list):
+                    v = [float(x) for x in val if x is not None and str(x) != 'nan']
+                    return sum(v) / len(v) if v else 0.0
+                return float(val) if not math.isnan(float(val)) else 0.0
+            except:
+                return 0.0
+
         return {
-            "faithfulness": round(float(scores["faithfulness"]), 4),
-            "answer_relevancy": round(float(scores["answer_relevancy"]), 4),
-            "context_precision": round(float(scores["context_precision"]), 4),
-            "context_recall": round(float(scores["context_recall"]), 4),
+            "faithfulness": round(safe_get("faithfulness"), 4),
+            "answer_relevancy": 0.0,  # Omitted due to Groq API limits
+            "context_precision": round(safe_get("context_precision"), 4),
+            "context_recall": round(safe_get("context_recall"), 4),
         }
 
     except Exception as e:

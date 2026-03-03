@@ -1,5 +1,5 @@
 """
-chunker.py — Text splitting strategies using LangChain RecursiveCharacterTextSplitter.
+ingestion/chunker.py — Text splitting strategies using LangChain RecursiveCharacterTextSplitter.
 """
 
 import os
@@ -33,7 +33,6 @@ def chunk_documents(docs: list, chunk_config: dict, output_dir: str) -> list:
 
     chunks = splitter.split_documents(docs)
 
-    # Enrich metadata for each chunk
     for i, chunk in enumerate(chunks):
         chunk.metadata["chunk_id"] = f"{strategy}_chunk_{i}"
         chunk.metadata["chunk_strategy"] = strategy
@@ -72,14 +71,7 @@ def _save_chunk_summary(chunks: list, strategy: str, output_dir: str):
 def compare_chunk_strategies(docs: list, configs: list, output_dir: str) -> dict:
     """
     Runs chunk_documents() for every config and prints a comparison table.
-
-    Args:
-        docs: List of LangChain Document objects.
-        configs: List of chunk config dicts.
-        output_dir: Directory to save chunk summary CSVs.
-
-    Returns:
-        Dict mapping strategy name → list of chunk Documents.
+    Returns dict mapping strategy name → list of chunk Documents.
     """
     results = {}
 

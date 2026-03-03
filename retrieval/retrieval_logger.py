@@ -1,20 +1,19 @@
 """
-retrieval_logger.py — Phase 2: Log retrieval runs to PostgreSQL and CSV.
+retrieval/logger.py — Phase 2: Log retrieval runs to PostgreSQL and CSV.
 """
 
 import os
 import csv
 import json
 from sqlalchemy import select, func
-import database
-from database import retrieval_logs_table
+from core import database
+from core.database import retrieval_logs_table
 
 
 def log_retrieval(retrieval_output: dict, embedding_model_name: str,
                   chunk_strategy: str) -> int:
     """
     Log a single retrieval run to PostgreSQL.
-    Takes output from any retriever (similarity/mmr/hybrid).
     Returns the new log id.
     """
     log_data = {
@@ -33,19 +32,14 @@ def log_retrieval(retrieval_output: dict, embedding_model_name: str,
 
 def log_all_retrievers(all_results: dict, embedding_model_name: str,
                        chunk_strategy: str) -> None:
-    """
-    Log all 3 retriever outputs from run_all_retrievers() to PostgreSQL.
-    """
+    """Log all 3 retriever outputs from run_all_retrievers() to PostgreSQL."""
     for rtype in ("similarity", "mmr", "hybrid"):
         log_retrieval(all_results[rtype], embedding_model_name, chunk_strategy)
     print("📝 Logged 3 retrieval runs to PostgreSQL")
 
 
 def save_results_to_csv(all_results: dict, output_dir: str) -> None:
-    """
-    Flatten all results into rows and append to retrieval_results.csv.
-    Creates file with header if it doesn't exist.
-    """
+    """Flatten all results into rows and append to retrieval_results.csv."""
     filepath = os.path.join(output_dir, "retrieval_results.csv")
     file_exists = os.path.exists(filepath)
 
@@ -81,9 +75,7 @@ def save_results_to_csv(all_results: dict, output_dir: str) -> None:
 
 
 def get_retrieval_summary() -> None:
-    """
-    Query PostgreSQL retrieval_logs and print a summary table.
-    """
+    """Query PostgreSQL retrieval_logs and print a summary table."""
     engine = database.get_engine()
     with engine.connect() as conn:
         rows = conn.execute(

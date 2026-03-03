@@ -1,5 +1,5 @@
 """
-prompt_builder.py — Builds structured prompts from retrieved chunks.
+generation/prompt_builder.py — Builds structured prompts from retrieved chunks.
 Used by Phase 3 LLM Generation to create grounded, cited answers.
 """
 
@@ -39,13 +39,8 @@ Question: {query}
 Answer (cite your sources):"""
 
 
-# ─── Function 1: Build Context Block ────────────────────────────────────────
-
 def build_context_block(retrieved_chunks: list) -> str:
-    """
-    Format retrieved chunks into a single context string.
-    Takes list of result dicts from Phase 2 retriever.
-    """
+    """Format retrieved chunks into a single context string."""
     blocks = []
     for i, chunk in enumerate(retrieved_chunks, 1):
         block = CONTEXT_TEMPLATE.format(
@@ -62,18 +57,10 @@ def build_context_block(retrieved_chunks: list) -> str:
     return context
 
 
-# ─── Function 2: Build Prompt ───────────────────────────────────────────────
-
 def build_prompt(query: str, retrieved_chunks: list) -> dict:
-    """
-    Build a structured prompt dict with system and user messages.
-    Returns dict with system, user, context_block, chunk_count, total_chars.
-    """
+    """Build a structured prompt dict with system and user messages."""
     context_block = build_context_block(retrieved_chunks)
-    user_prompt = USER_PROMPT_TEMPLATE.format(
-        context_block=context_block,
-        query=query,
-    )
+    user_prompt = USER_PROMPT_TEMPLATE.format(context_block=context_block, query=query)
 
     return {
         "system": SYSTEM_PROMPT,
@@ -84,12 +71,8 @@ def build_prompt(query: str, retrieved_chunks: list) -> dict:
     }
 
 
-# ─── Function 3: Extract Sources ────────────────────────────────────────────
-
 def extract_sources(retrieved_chunks: list) -> list:
-    """
-    Extract unique (filename, page_number) pairs from retrieved chunks.
-    """
+    """Extract unique (filename, page_number) pairs from retrieved chunks."""
     seen = set()
     sources = []
     for chunk in retrieved_chunks:
@@ -100,29 +83,18 @@ def extract_sources(retrieved_chunks: list) -> list:
     return sources
 
 
-# ─── Function 4: Format Answer With Sources ─────────────────────────────────
-
 def format_answer_with_sources(answer: str, sources: list) -> str:
-    """
-    Append source citations to the answer if not already present.
-    """
+    """Append source citations to the answer if not already present."""
     if "[Source:" in answer or "📚 Sources:" in answer:
         return answer
 
     source_lines = [f"  • {s['filename']} — Page {s['page_number']}" for s in sources]
-    formatted = answer.rstrip() + "\n\n📚 Sources:\n" + "\n".join(source_lines)
-    return formatted
+    return answer.rstrip() + "\n\n📚 Sources:\n" + "\n".join(source_lines)
 
-
-# ─── Function 5: Build HF Prompt String ─────────────────────────────────────
 
 def build_hf_prompt_string(query: str, retrieved_chunks: list) -> str:
-    """
-    Build a single string prompt for HuggingFace Inference API.
-    HF API takes a single input string, not a messages array.
-    """
+    """Build a single string prompt for HuggingFace Inference API."""
     context_block = build_context_block(retrieved_chunks)
-
     return f"""{SYSTEM_PROMPT}
 
 {context_block}

@@ -1,5 +1,5 @@
 """
-embedder.py — HuggingFace embedding model loading and chunk embedding.
+ingestion/embedder.py — HuggingFace embedding model loading and chunk embedding.
 """
 
 from tqdm import tqdm
@@ -67,3 +67,10 @@ def embed_chunks(chunks: list, embedding_model, batch_size: int = 500) -> list:
 
     print(f"✅ Embedded {len(embedded)} chunks.")
     return embedded
+
+
+def embed_query(query: str, embedding_model) -> list[float]:
+    """
+    Embeds a single query string using the given embedding model.
+    """
+    return embedding_model.embed_query(query)

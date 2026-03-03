@@ -1,20 +1,15 @@
 """
-answer_store.py — Save Q&A records and model comparisons to PostgreSQL.
+generation/answer_store.py — Save Q&A records and model comparisons to PostgreSQL.
 """
 
 import json
-import database
-from config import DEFAULT_CHUNK_CONFIG, DEFAULT_EMBEDDING_CONFIG
+from core import database
+from core.config import DEFAULT_CHUNK_CONFIG, DEFAULT_EMBEDDING_CONFIG
 
-
-# ─── Function 1: Save Q&A Record ────────────────────────────────────────────
 
 def save_qa(query: str, retrieval_output: dict, generation_result: dict,
             prompt: dict, sources: list) -> int:
-    """
-    Save a complete Q&A record to PostgreSQL qa_logs table.
-    Returns the new record id.
-    """
+    """Save a complete Q&A record to PostgreSQL qa_logs. Returns new record id."""
     qa_data = {
         "query_text": query,
         "retriever_type": retrieval_output.get("retriever_type", ""),
@@ -32,29 +27,23 @@ def save_qa(query: str, retrieval_output: dict, generation_result: dict,
         "latency_seconds": generation_result.get("latency_seconds", 0),
         "cost_usd": generation_result.get("cost_usd", 0.0),
     }
-
     record_id = database.insert_qa_log(qa_data)
     print(f"💾 Q&A saved to PostgreSQL (id: {record_id})")
     return record_id
 
 
-# ─── Function 2: Save Model Comparison ──────────────────────────────────────
-
 def save_comparison(query: str, retriever_type: str, top_k: int,
                     generation_results: dict) -> int:
-    """
-    Save a multi-model comparison record.
-    generation_results: dict of llm_key -> generation_result dict
-    """
-    # Serialize results for JSON storage
-    serializable = {}
-    for llm_key, result in generation_results.items():
-        serializable[llm_key] = {
+    """Save a multi-model comparison record. Returns new record id."""
+    serializable = {
+        llm_key: {
             "llm_name": result.get("llm_name", ""),
-            "answer": result.get("answer", "")[:500],  # Truncate for comparison storage
+            "answer": result.get("answer", "")[:500],
             "latency_seconds": result.get("latency_seconds", 0),
             "cost_usd": result.get("cost_usd", 0.0),
         }
+        for llm_key, result in generation_results.items()
+    }
 
     comparison_data = {
         "query_text": query,
@@ -62,18 +51,14 @@ def save_comparison(query: str, retriever_type: str, top_k: int,
         "top_k": top_k,
         "results": json.dumps(serializable),
     }
-
     record_id = database.insert_model_comparison(comparison_data)
     print(f"💾 Comparison saved to PostgreSQL (id: {record_id})")
     return record_id
 
 
-# ─── Function 3: Print Q&A History ──────────────────────────────────────────
-
 def print_qa_history(limit: int = 5):
     """Print recent Q&A history from PostgreSQL."""
     rows = database.get_qa_history(limit)
-
     if not rows:
         print("  No Q&A history yet.")
         return
