@@ -32,3 +32,10 @@ Thumbs.db
 # Assistant agents / skills
 .agents/
 .agent/
+
+# Frontend (if matched from root)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+frontend/*.local

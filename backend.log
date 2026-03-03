@@ -1,0 +1,762 @@
+INFO:     Will watch for changes in these directories: ['/Users/sujalkamble/Documents/OceanRAG']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [43064] using WatchFiles
+INFO:     Started server process [43066]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+
+🚀 Starting DeepRAG API...
+   Initializing database tables...
+✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs, qa_logs, model_comparisons)
+   Loading DeepRAG pipeline (Phase 1)...
+
+=======================================================
+  PHASE 1: DOCUMENT PIPELINE
+=======================================================
+✅ Configuration validated
+
+✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs, qa_logs, model_comparisons)
+✅ PostgreSQL tables ready
+
+✅ Connected to Qdrant Cloud
+📦 Collection 'OceanRag' — 37013 vectors (green)
+⚡ Qdrant has 37013 vectors. Skipping re-index.
+   Pass rebuild=True to force re-index.
+
+⏳ Loading MiniLM model (sentence-transformers/all-MiniLM-L6-v2)...
+   (First run will download the model — this may take a minute)
+✅ Embedding model 'MiniLM' loaded.
+⚡ Chunks will be loaded on demand for hybrid search.
+
+🎉 Phase 1 Complete
+
+✅ DeepRAG API ready — visit http://localhost:8000/docs
+
+INFO:     127.0.0.1:61705 - "OPTIONS /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61706 - "OPTIONS /history/ HTTP/1.1" 200 OK
+🔢 Query embedded — vector size: 384
+📄 Built context from 5 chunks (1380 chars)
+🤖 Calling LLaMA 3.1 8B (Groq) (groq)...
+INFO:     127.0.0.1:61705 - "GET /history/ HTTP/1.1" 200 OK
+💾 Q&A saved to PostgreSQL (id: 111)
+INFO:     127.0.0.1:61698 - "POST /query/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61698 - "OPTIONS /history/110 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61705 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61718 - "GET /history/110 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61729 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61736 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61736 - "OPTIONS /history/111 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61729 - "GET /history/111 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61729 - "GET /history/111 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61729 - "GET /history/111 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61758 - "GET /history/111 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 714, in checkout
+    dbapi_connection = rec.get_connection()
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 865, in get_connection
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/psycopg2/__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+psycopg2.OperationalError: connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (54.86.249.90), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (98.91.36.187), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (44.211.114.173), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:710a:3a89:1dc1:c141:1098), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:712b:ca4c:8d62:7a17:63ff), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:7118:cff2:eefe:417d:e5d2), port 5432 failed: timeout expired
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 95, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 153, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 453, in app
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/dependencies/utils.py", line 675, in solve_dependencies
+    solved = await call(**solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/api/dependencies.py", line 27, in get_current_user
+    user = get_user_by_username(username)
+  File "/Users/sujalkamble/Documents/OceanRAG/core/database.py", line 413, in get_user_by_username
+    with engine.connect() as conn:
+         ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 714, in checkout
+    dbapi_connection = rec.get_connection()
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 865, in get_connection
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/psycopg2/__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (54.86.249.90), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (98.91.36.187), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (44.211.114.173), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:710a:3a89:1dc1:c141:1098), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:712b:ca4c:8d62:7a17:63ff), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:7118:cff2:eefe:417d:e5d2), port 5432 failed: timeout expired
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     127.0.0.1:61761 - "GET /history/111 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 714, in checkout
+    dbapi_connection = rec.get_connection()
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 836, in get_connection
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/psycopg2/__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+psycopg2.OperationalError: connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (54.86.249.90), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (98.91.36.187), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (44.211.114.173), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:710a:3a89:1dc1:c141:1098), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:712b:ca4c:8d62:7a17:63ff), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:7118:cff2:eefe:417d:e5d2), port 5432 failed: timeout expired
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 95, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 153, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 453, in app
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/dependencies/utils.py", line 675, in solve_dependencies
+    solved = await call(**solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/api/dependencies.py", line 27, in get_current_user
+    user = get_user_by_username(username)
+  File "/Users/sujalkamble/Documents/OceanRAG/core/database.py", line 413, in get_user_by_username
+    with engine.connect() as conn:
+         ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 714, in checkout
+    dbapi_connection = rec.get_connection()
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 836, in get_connection
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/psycopg2/__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (54.86.249.90), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (98.91.36.187), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (44.211.114.173), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:710a:3a89:1dc1:c141:1098), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:712b:ca4c:8d62:7a17:63ff), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:7118:cff2:eefe:417d:e5d2), port 5432 failed: timeout expired
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     127.0.0.1:61827 - "OPTIONS /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61829 - "OPTIONS /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61827 - "OPTIONS /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61830 - "OPTIONS /dashboard/feedback-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61829 - "OPTIONS /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61827 - "OPTIONS /dashboard/feedback-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61830 - "OPTIONS /experiments/leaderboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61829 - "OPTIONS /experiments/leaderboard HTTP/1.1" 200 OK
+🔢 Query embedded — vector size: 384
+INFO:     127.0.0.1:61830 - "GET /dashboard/feedback-stats HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:61776 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61776 - "GET /dashboard/feedback-stats HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:61829 - "GET /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61790 - "GET /history/ HTTP/1.1" 200 OK
+📄 Built context from 5 chunks (1378 chars)
+🤖 Calling LLaMA 3.1 8B (Groq) (groq)...
+💾 Q&A saved to PostgreSQL (id: 112)
+INFO:     127.0.0.1:61827 - "GET /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61830 - "GET /experiments/leaderboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61776 - "GET /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61783 - "POST /query/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61830 - "GET /experiments/leaderboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61829 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61783 - "GET /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61830 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61867 - "GET /dashboard/feedback-stats HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:61867 - "GET /dashboard/feedback-stats HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:61866 - "GET /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61863 - "GET /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61866 - "GET /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61871 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61863 - "GET /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61866 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61911 - "OPTIONS /history/112 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61911 - "GET /history/112 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61913 - "GET /history/111 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61918 - "GET /history/110 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61911 - "GET /history/111 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61913 - "GET /history/110 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61911 - "GET /history/111 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61926 - "GET /history/110 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61913 - "GET /history/111 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61926 - "GET /history/110 HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'generation/generation_pipeline.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [43066]
+INFO:     Started server process [43642]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+
+🚀 Starting DeepRAG API...
+   Initializing database tables...
+✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs, qa_logs, model_comparisons)
+   Loading DeepRAG pipeline (Phase 1)...
+
+=======================================================
+  PHASE 1: DOCUMENT PIPELINE
+=======================================================
+✅ Configuration validated
+
+✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs, qa_logs, model_comparisons)
+✅ PostgreSQL tables ready
+
+✅ Connected to Qdrant Cloud
+📦 Collection 'OceanRag' — 37013 vectors (green)
+⚡ Qdrant has 37013 vectors. Skipping re-index.
+   Pass rebuild=True to force re-index.
+
+⏳ Loading MiniLM model (sentence-transformers/all-MiniLM-L6-v2)...
+   (First run will download the model — this may take a minute)
+✅ Embedding model 'MiniLM' loaded.
+⚡ Chunks will be loaded on demand for hybrid search.
+
+🎉 Phase 1 Complete
+
+✅ DeepRAG API ready — visit http://localhost:8000/docs
+
+INFO:     127.0.0.1:61962 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61972 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61982 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62001 - "OPTIONS /query/ HTTP/1.1" 200 OK
+🔢 Query embedded — vector size: 384
+📄 Built context from 5 chunks (1376 chars)
+🤖 Calling LLaMA 3.1 8B (Groq) (groq)...
+INFO:     127.0.0.1:62001 - "POST /query/ HTTP/1.1" 200 OK
+💾 Q&A saved to PostgreSQL (id: 113)
+💾 Q&A saved to PostgreSQL (id: 113)
+🔢 Query embedded — vector size: 384
+INFO:     127.0.0.1:62024 - "POST /query/ HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:62121 - "GET /dashboard/feedback-stats HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:62120 - "GET /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62121 - "GET /dashboard/feedback-stats HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:62119 - "GET /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62120 - "GET /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62119 - "GET /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62145 - "OPTIONS /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62146 - "OPTIONS /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62145 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62152 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62198 - "OPTIONS /history/112 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62209 - "OPTIONS /history/94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62211 - "OPTIONS /history/94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62214 - "OPTIONS /history/94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62216 - "OPTIONS /history/94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62218 - "OPTIONS /history/94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62198 - "GET /history/112 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62209 - "GET /history/94 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62236 - "OPTIONS /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62238 - "OPTIONS /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62240 - "OPTIONS /dashboard/feedback-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62242 - "OPTIONS /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "OPTIONS /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62236 - "OPTIONS /dashboard/feedback-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62242 - "GET /dashboard/feedback-stats HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:62226 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62242 - "GET /dashboard/feedback-stats HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:62240 - "GET /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62255 - "GET /dashboard/charts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62238 - "GET /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62251 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62238 - "GET /dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62264 - "OPTIONS /experiments/leaderboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62265 - "OPTIONS /experiments/leaderboard HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'generation/llm_handler.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for connections to close. (CTRL+C to force quit)
+INFO:     127.0.0.1:62264 - "GET /experiments/leaderboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62265 - "GET /history/ HTTP/1.1" 200 OK
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [43642]
+INFO:     Started server process [43862]
+INFO:     Waiting for application startup.
+WARNING:  WatchFiles detected changes in 'generation/generation_pipeline.py'. Reloading...
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [43862]
+WARNING:  WatchFiles detected changes in 'generation/__init__.py'. Reloading...
+INFO:     Started server process [43893]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [43893]
+WARNING:  WatchFiles detected changes in 'pipeline/deeprag_pipeline.py'. Reloading...
+INFO:     Started server process [43915]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [43915]
+WARNING:  WatchFiles detected changes in 'api/routers/query.py'. Reloading...
+INFO:     Started server process [43948]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [43948]
+INFO:     Started server process [43980]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+
+🚀 Starting DeepRAG API...
+   Initializing database tables...
+✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs, qa_logs, model_comparisons)
+   Loading DeepRAG pipeline (Phase 1)...
+
+=======================================================
+  PHASE 1: DOCUMENT PIPELINE
+=======================================================
+✅ Configuration validated
+
+✅ PostgreSQL tables ready (documents, chunks, experiments, retrieval_logs, qa_logs, model_comparisons)
+✅ PostgreSQL tables ready
+
+✅ Connected to Qdrant Cloud
+📦 Collection 'OceanRag' — 37013 vectors (green)
+⚡ Qdrant has 37013 vectors. Skipping re-index.
+   Pass rebuild=True to force re-index.
+
+⏳ Loading MiniLM model (sentence-transformers/all-MiniLM-L6-v2)...
+   (First run will download the model — this may take a minute)
+✅ Embedding model 'MiniLM' loaded.
+⚡ Chunks will be loaded on demand for hybrid search.
+
+🎉 Phase 1 Complete
+
+✅ DeepRAG API ready — visit http://localhost:8000/docs
+
+INFO:     127.0.0.1:62469 - "OPTIONS /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62480 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62505 - "GET /auth/me HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:62478 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62478 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62469 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62549 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62549 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62555 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62572 - "OPTIONS /query/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62572 - "POST /query/stream HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 714, in checkout
+    dbapi_connection = rec.get_connection()
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 865, in get_connection
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/psycopg2/__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+psycopg2.OperationalError: connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (98.91.36.187), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (54.86.249.90), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (44.211.114.173), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:7118:cff2:eefe:417d:e5d2), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:710a:3a89:1dc1:c141:1098), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:712b:ca4c:8d62:7a17:63ff), port 5432 failed: timeout expired
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 95, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 153, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 453, in app
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/fastapi/dependencies/utils.py", line 675, in solve_dependencies
+    solved = await call(**solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/api/dependencies.py", line 27, in get_current_user
+    user = get_user_by_username(username)
+  File "/Users/sujalkamble/Documents/OceanRAG/core/database.py", line 413, in get_user_by_username
+    with engine.connect() as conn:
+         ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3285, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2448, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 714, in checkout
+    dbapi_connection = rec.get_connection()
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 865, in get_connection
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/sujalkamble/Documents/OceanRAG/.venv/lib/python3.13/site-packages/psycopg2/__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (98.91.36.187), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (54.86.249.90), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (44.211.114.173), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:7118:cff2:eefe:417d:e5d2), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:710a:3a89:1dc1:c141:1098), port 5432 failed: timeout expired
+connection to server at "ep-spring-morning-ainz0ze4-pooler.c-4.us-east-1.aws.neon.tech" (2600:1f10:44f9:712b:ca4c:8d62:7a17:63ff), port 5432 failed: timeout expired
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     127.0.0.1:62620 - "OPTIONS /history/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62621 - "OPTIONS /history/ HTTP/1.1" 200 OK
+/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/resource_tracker.py:324: UserWarning: resource_tracker: There appear to be 2 leaked semaphore objects to clean up at shutdown: {'/loky-43066-a5zkxejh', '/loky-43642-zx64651_'}
+  warnings.warn(

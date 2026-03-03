@@ -17,7 +17,7 @@ from retrieval import (
     log_all_retrievers, save_results_to_csv
 )
 from generation import (
-    get_available_llms, run_rag_query,
+    get_available_llms, run_rag_query, stream_rag_query,
     run_multimodel_comparison, print_rag_result,
     print_qa_history
 )
@@ -377,3 +377,83 @@ class DeepRAGPipeline:
                 top_k=k
             )
             print_rag_result(result)
+
+    # ────────────────────────────────────────────────────
+    # PHASE 5 — API Method
+    # ────────────────────────────────────────────────────
+    def run_rag_query(
+        self,
+        query: str,
+        retriever_type: str = "similarity",
+        llm_key: str = "groq-llama8b",
+        top_k: int = 5,
+        user_id: int = None,
+    ) -> dict:
+        """
+        Thin wrapper around generation.run_rag_query for the FastAPI backend.
+        Returns a structured dict with: answer, sources, chunks, latency, cost, record_id.
+        """
+        if not self.is_phase1_ready:
+            raise RuntimeError("Pipeline not ready. run_phase1() must complete first.")
+
+        result = run_rag_query(
+            query=query,
+            qdrant_client=self.qdrant_client,
+            collection_name=self.collection_name,
+            embedding_model=self.embedding_model,
+            chunks=self.chunks,
+            retriever_type=retriever_type,
+            llm_key=llm_key,
+            top_k=top_k,
+        )
+
+        # Build structured retrieved_chunks list for API response
+        raw_chunks = result.get("retrieved_chunks", [])
+        chunk_list = []
+        for i, c in enumerate(raw_chunks):
+            meta = c.metadata if hasattr(c, "metadata") else {}
+            chunk_list.append({
+                "rank": i + 1,
+                "score": round(meta.get("score", 0.0), 4),
+                "filename": meta.get("filename", ""),
+                "page_number": meta.get("page_number", 0),
+                "preview": (c.page_content[:250] if hasattr(c, "page_content") else str(c))[:250],
+            })
+
+        return {
+            "answer": result.get("answer", ""),
+            "sources": result.get("sources", []),
+            "retrieved_chunks": chunk_list,
+            "llm_name": result.get("llm_name", llm_key),
+            "latency_seconds": result.get("latency_seconds", 0.0),
+            "cost_usd": result.get("cost_usd", 0.0),
+            "record_id": result.get("record_id", 0),
+        }
+
+    # ────────────────────────────────────────────────────
+    # PHASE 5b — Streaming API Method
+    # ────────────────────────────────────────────────────
+    def stream_rag_query_api(
+        self,
+        query: str,
+        retriever_type: str = "similarity",
+        llm_key: str = "groq-llama8b",
+        top_k: int = 5,
+        user_id: int = None,
+    ):
+        """Streaming wrapper for the FastAPI streaming endpoint.
+        Yields SSE event dicts from generation.stream_rag_query."""
+        if not self.is_phase1_ready:
+            raise RuntimeError("Pipeline not ready. run_phase1() must complete first.")
+
+        yield from stream_rag_query(
+            query=query,
+            qdrant_client=self.qdrant_client,
+            collection_name=self.collection_name,
+            embedding_model=self.embedding_model,
+            chunks=self.chunks,
+            retriever_type=retriever_type,
+            llm_key=llm_key,
+            top_k=top_k,
+        )
+

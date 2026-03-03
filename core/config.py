@@ -28,7 +28,7 @@ if not DATABASE_URL:
     if pg_host and pg_db and pg_user and pg_pwd:
         DATABASE_URL = f"postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/{pg_db}"
         if pg_host not in ("localhost", "127.0.0.1"):
-            DATABASE_URL += "?sslmode=require"
+            DATABASE_URL += "?sslmode=require&connect_timeout=10"
 
 # ── LLM Keys ─────────────────────────────────────────────
 GROQ_API_KEY  = os.getenv("GROQ_API_KEY",  "")

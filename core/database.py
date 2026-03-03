@@ -119,14 +119,19 @@ def get_engine():
     if not DATABASE_URL:
         raise EnvironmentError("DATABASE_URL is not set.")
     
-    # Neon Serverless Postgres drops idle connections, so we must recycle them 
-    # and pre-ping them before checkout to avoid "SSL SYSCALL error: EOF detected"
+    # Neon Serverless Postgres drops idle connections after ~60s.
+    # pool_pre_ping checks the connection before use.
+    # pool_recycle=55 ensures we recycle before Neon drops them.
+    # pool_timeout=10 means requests fail fast (not hang) if no connection available.
+    # connect_args sets psycopg2-level socket timeout so auth never hangs forever.
     _engine = create_engine(
-        DATABASE_URL, 
-        echo=False, 
-        pool_pre_ping=True, 
-        pool_recycle=300,        # Recycle connections after 5 minutes
-        pool_use_lifo=True       # Use LIFO to reduce total connections to Neon
+        DATABASE_URL,
+        echo=False,
+        pool_pre_ping=True,
+        pool_recycle=55,          # Recycle before Neon's ~60s idle timeout
+        pool_timeout=10,          # Wait max 10s for a connection from pool
+        pool_use_lifo=True,       # Use LIFO to reduce total open connections
+        connect_args={"connect_timeout": 15},  # psycopg2 socket-level timeout
     )
     return _engine
 
@@ -344,3 +349,158 @@ def get_best_config() -> dict:
         ) / 4
 
     return max(experiments, key=composite)
+
+
+# ─── Phase 5 Tables ─────────────────────────────────────────────────────────
+
+users_table = Table(
+    "users", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("username", String(100), unique=True, nullable=False),
+    Column("email", String(200), unique=True, nullable=False),
+    Column("hashed_password", Text, nullable=False),
+    Column("role", String(50), server_default="student"),
+    Column("is_active", String(10), server_default="true"),
+    Column("created_at", DateTime, server_default=func.now()),
+)
+
+feedback_table = Table(
+    "feedback", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("qa_log_id", Integer, ForeignKey("qa_logs.id")),
+    Column("user_id", Integer, ForeignKey("users.id")),
+    Column("rating", Integer),        # 1=thumbs up, -1=thumbs down
+    Column("comment", Text),
+    Column("created_at", DateTime, server_default=func.now()),
+)
+
+
+# ─── Phase 5 DB Functions ────────────────────────────────────────────────────
+
+def create_user(username: str, email: str, hashed_password: str, role: str = "student") -> dict:
+    """Insert a new user. Returns the created user dict."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        result = conn.execute(
+            users_table.insert().values(
+                username=username,
+                email=email,
+                hashed_password=hashed_password,
+                role=role,
+                is_active="true",
+            ).returning(*users_table.c)
+        )
+        conn.commit()
+        row = result.fetchone()
+        return dict(zip([c.name for c in users_table.columns], row))
+
+
+def get_user_by_email(email: str) -> dict | None:
+    """Fetch a user by email. Returns dict or None."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(
+            select(users_table).where(users_table.c.email == email)
+        ).fetchone()
+    if not row:
+        return None
+    return dict(zip([c.name for c in users_table.columns], row))
+
+
+def get_user_by_username(username: str) -> dict | None:
+    """Fetch a user by username. Returns dict or None."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(
+            select(users_table).where(users_table.c.username == username)
+        ).fetchone()
+    if not row:
+        return None
+    return dict(zip([c.name for c in users_table.columns], row))
+
+
+def insert_feedback(qa_log_id: int, user_id: int, rating: int, comment: str = "") -> int:
+    """Insert a feedback record. Returns the new feedback id."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        result = conn.execute(
+            feedback_table.insert().values(
+                qa_log_id=qa_log_id,
+                user_id=user_id,
+                rating=rating,
+                comment=comment,
+            ).returning(feedback_table.c.id)
+        )
+        conn.commit()
+        return result.scalar()
+
+
+def get_feedback_stats() -> dict:
+    """Returns thumbs-up/down counts and average rating per LLM."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        total = conn.execute(
+            select(func.count()).select_from(feedback_table)
+        ).scalar()
+        avg_rating = conn.execute(
+            select(func.avg(feedback_table.c.rating)).select_from(feedback_table)
+        ).scalar()
+        thumbs_up = conn.execute(
+            select(func.count()).select_from(feedback_table)
+            .where(feedback_table.c.rating == 1)
+        ).scalar()
+        thumbs_down = conn.execute(
+            select(func.count()).select_from(feedback_table)
+            .where(feedback_table.c.rating == -1)
+        ).scalar()
+
+    return {
+        "total_feedback": total,
+        "thumbs_up": thumbs_up,
+        "thumbs_down": thumbs_down,
+        "avg_rating": round(float(avg_rating), 3) if avg_rating else 0.0,
+    }
+
+
+def get_dashboard_stats() -> dict:
+    """Returns aggregated stats for the dashboard."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        total_docs = conn.execute(select(func.count()).select_from(documents_table)).scalar()
+        total_chunks = conn.execute(select(func.count()).select_from(chunks_table)).scalar()
+        total_queries = conn.execute(select(func.count()).select_from(qa_logs_table)).scalar()
+        total_experiments = conn.execute(select(func.count()).select_from(experiments_table)).scalar()
+
+        avg_faith_row = conn.execute(
+            select(func.avg(experiments_table.c.faithfulness)).select_from(experiments_table)
+        ).scalar()
+        avg_latency_row = conn.execute(
+            select(func.avg(qa_logs_table.c.latency_seconds)).select_from(qa_logs_table)
+        ).scalar()
+
+        # Most used LLM
+        llm_row = conn.execute(
+            select(qa_logs_table.c.llm_name, func.count().label("cnt"))
+            .group_by(qa_logs_table.c.llm_name)
+            .order_by(func.count().desc())
+            .limit(1)
+        ).fetchone()
+
+        # Most used retriever
+        ret_row = conn.execute(
+            select(qa_logs_table.c.retriever_type, func.count().label("cnt"))
+            .group_by(qa_logs_table.c.retriever_type)
+            .order_by(func.count().desc())
+            .limit(1)
+        ).fetchone()
+
+    return {
+        "total_documents": total_docs or 0,
+        "total_chunks": total_chunks or 0,
+        "total_queries": total_queries or 0,
+        "total_experiments": total_experiments or 0,
+        "avg_faithfulness": round(float(avg_faith_row), 3) if avg_faith_row else 0.0,
+        "avg_latency": round(float(avg_latency_row), 3) if avg_latency_row else 0.0,
+        "most_used_llm": llm_row[0] if llm_row else "N/A",
+        "most_used_retriever": ret_row[0] if ret_row else "N/A",
+    }

@@ -12,6 +12,7 @@ from generation.llm_handler import (
     LLM_CONFIGS,
     get_available_llms,
     generate_answer,
+    stream_answer,
     print_llm_response
 )
 from generation.answer_store import (
@@ -21,6 +22,7 @@ from generation.answer_store import (
 )
 from generation.generation_pipeline import (
     run_rag_query,
+    stream_rag_query,
     run_multimodel_comparison,
     print_rag_result
 )

@@ -212,6 +212,113 @@ def generate_answer(prompt: dict, llm_key: str) -> dict:
     }
 
 
+def stream_groq(prompt: dict, model_id: str, max_tokens: int):
+    """Stream tokens from Groq API. Yields (token_str, None) or (None, usage_dict)."""
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1")
+        stream = client.chat.completions.create(
+            model=model_id,
+            messages=[
+                {"role": "system", "content": prompt["system"]},
+                {"role": "user", "content": prompt["user"]},
+            ],
+            max_tokens=max_tokens,
+            temperature=0.1,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content, None
+            # Final chunk carries usage stats
+            if chunk.usage:
+                yield None, {
+                    "input_tokens": chunk.usage.prompt_tokens,
+                    "output_tokens": chunk.usage.completion_tokens,
+                }
+    except Exception as e:
+        yield f"Groq API error: {str(e)}", None
+
+
+def stream_huggingface(prompt: dict, llm_key: str, max_tokens: int):
+    """Stream tokens from HuggingFace InferenceClient. Yields (token_str, None)."""
+    hf_token = os.getenv("HF_API_TOKEN", "").strip()
+    if not hf_token:
+        yield "HF_API_TOKEN not set.", None
+        return
+
+    config = LLM_CONFIGS[llm_key]
+    try:
+        from huggingface_hub import InferenceClient
+        client = InferenceClient(api_key=hf_token)
+        stream = client.chat.completions.create(
+            model=config["model_id"],
+            messages=[
+                {"role": "system", "content": prompt["system"]},
+                {"role": "user",   "content": prompt["user"]},
+            ],
+            max_tokens=max_tokens,
+            temperature=0.1,
+            stream=True,
+        )
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content, None
+    except Exception as e:
+        yield f"HuggingFace API error: {str(e)}", None
+
+
+def stream_answer(prompt: dict, llm_key: str):
+    """Unified streaming interface. Yields dicts: {"token": str} or {"done": True, ...metadata}."""
+    if llm_key not in LLM_CONFIGS:
+        yield {"token": f"Unknown LLM key: {llm_key}"}
+        yield {"done": True, "llm_key": llm_key, "llm_name": llm_key, "input_tokens": 0, "output_tokens": 0, "latency_seconds": 0, "cost_usd": 0}
+        return
+
+    config = LLM_CONFIGS[llm_key]
+    env_key = config["requires_key"]
+    if not os.getenv(env_key, "").strip():
+        yield {"token": f"LLM '{llm_key}' requires {env_key} in .env"}
+        yield {"done": True, "llm_key": llm_key, "llm_name": config["name"], "input_tokens": 0, "output_tokens": 0, "latency_seconds": 0, "cost_usd": 0}
+        return
+
+    max_tokens = config["max_tokens"]
+    provider = config["provider"]
+    print(f"🤖 Streaming {config['name']} ({provider})...")
+
+    start = time.time()
+    usage = {"input_tokens": 0, "output_tokens": 0}
+
+    if provider == "groq":
+        for token, token_usage in stream_groq(prompt, config["model_id"], max_tokens):
+            if token:
+                yield {"token": token}
+            if token_usage:
+                usage = token_usage
+    elif provider == "huggingface":
+        for token, _ in stream_huggingface(prompt, llm_key, max_tokens):
+            if token:
+                yield {"token": token}
+    else:
+        yield {"token": f"Unknown provider: {provider}"}
+
+    end = time.time()
+    cost = calculate_cost(llm_key, usage["input_tokens"], usage["output_tokens"])
+
+    yield {
+        "done": True,
+        "llm_key": llm_key,
+        "llm_name": config["name"],
+        "model_id": config["model_id"],
+        "provider": provider,
+        "input_tokens": usage["input_tokens"],
+        "output_tokens": usage["output_tokens"],
+        "latency_seconds": round(end - start, 3),
+        "cost_usd": cost,
+    }
+
+
 def print_llm_response(generation_result: dict):
     """Print a formatted LLM response box."""
     name = generation_result["llm_name"]
