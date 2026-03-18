@@ -44,6 +44,7 @@ chunks_table = Table(
 experiments_table = Table(
     "experiments", metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("phase", String(10)),
     Column("chunk_strategy", String(100)),
     Column("embedding_model", String(100)),
     Column("retriever_type", String(100)),
@@ -56,9 +57,41 @@ experiments_table = Table(
     Column("faithfulness", Float),
     Column("answer_relevancy", Float),
     Column("rouge_l", Float),
+    Column("bleu", Float),
+    Column("bertscore", Float),
     Column("latency_seconds", Float),
     Column("cost_per_query", Float),
+    Column("num_questions", Integer),
     Column("run_at", DateTime, server_default=func.now()),
+)
+
+eval_results_table = Table(
+    "eval_results", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("experiment_id", Integer),
+    Column("phase", String(10)),
+    Column("chunk_strategy", String(100)),
+    Column("embedding_model", String(100)),
+    Column("retriever_type", String(100)),
+    Column("llm_name", String(100)),
+    Column("top_k", Integer),
+    Column("question", Text),
+    Column("ground_truth", Text),
+    Column("generated_answer", Text),
+    Column("retrieved_chunk_ids", JSON),
+    Column("relevant_chunk_ids", JSON),
+    Column("precision_at_k", Float),
+    Column("recall_at_k", Float),
+    Column("mrr", Float),
+    Column("hit_rate", Float),
+    Column("rouge_l", Float),
+    Column("bleu", Float),
+    Column("bertscore", Float),
+    Column("faithfulness", Float),
+    Column("retrieval_latency_ms", Float),
+    Column("generation_latency_ms", Float),
+    Column("cost_usd", Float),
+    Column("created_at", DateTime, server_default=func.now()),
 )
 
 retrieval_logs_table = Table(
@@ -77,6 +110,8 @@ retrieval_logs_table = Table(
 qa_logs_table = Table(
     "qa_logs", metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("session_id", String(100)),
+    Column("user_id", Integer, ForeignKey("users.id")),
     Column("query_text", Text, nullable=False),
     Column("retriever_type", String(100)),
     Column("embedding_model", String(100)),
@@ -236,12 +271,50 @@ def get_chunk_stats() -> dict:
     }
 
 
-def insert_experiment(experiment_data: dict) -> None:
-    """Inserts a row into the experiments table (used in Phase 4)."""
+def insert_experiment(experiment_data: dict) -> int:
+    """Inserts a row into the experiments table. Returns new experiment id."""
     engine = get_engine()
     with engine.connect() as conn:
-        conn.execute(experiments_table.insert().values(**experiment_data))
+        result = conn.execute(
+            experiments_table.insert().values(**experiment_data).returning(experiments_table.c.id)
+        )
         conn.commit()
+        return result.scalar()
+
+
+def insert_eval_result(result_data: dict) -> int:
+    """Insert a single per-question eval result. Returns new id."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        result = conn.execute(
+            eval_results_table.insert().values(**result_data).returning(eval_results_table.c.id)
+        )
+        conn.commit()
+        return result.scalar()
+
+
+def insert_eval_results_batch(results: list, batch_size: int = 100) -> None:
+    """Batch insert eval results for efficiency."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        for i in range(0, len(results), batch_size):
+            batch = results[i : i + batch_size]
+            conn.execute(eval_results_table.insert(), batch)
+            conn.commit()
+
+
+def get_eval_results(phase: str = None, limit: int = 500) -> list:
+    """Get eval results, optionally filtered by phase."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        query = select(eval_results_table).order_by(eval_results_table.c.created_at.desc())
+        if phase:
+            query = query.where(eval_results_table.c.phase == phase)
+        query = query.limit(limit)
+        rows = conn.execute(query).fetchall()
+
+    columns = [c.name for c in eval_results_table.columns]
+    return [dict(zip(columns, row)) for row in rows]
 
 
 def insert_retrieval_log(log_data: dict) -> int:
@@ -504,3 +577,59 @@ def get_dashboard_stats() -> dict:
         "most_used_llm": llm_row[0] if llm_row else "N/A",
         "most_used_retriever": ret_row[0] if ret_row else "N/A",
     }
+
+
+def get_user_sessions(user_id: int) -> list:
+    """Returns a list of unique session dicts for a user, ordered by most recent."""
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(
+                qa_logs_table.c.session_id,
+                qa_logs_table.c.query_text,
+                qa_logs_table.c.run_at
+            )
+            .where(qa_logs_table.c.user_id == user_id)
+            .where(qa_logs_table.c.session_id.isnot(None))
+            .order_by(qa_logs_table.c.run_at.desc())
+        ).fetchall()
+        
+    sessions = []
+    seen = set()
+    for r in rows:
+        if r.session_id not in seen:
+            seen.add(r.session_id)
+            sessions.append({
+                "session_id": r.session_id,
+                "title": r.query_text[:50] + "..." if len(r.query_text) > 50 else r.query_text,
+                "last_active": str(r.run_at) if r.run_at else ""
+            })
+    return sessions
+
+
+def get_session_history(session_id: str, user_id: int) -> list:
+    """Returns all Q&A pairs for a specific session."""
+    import json
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(
+                qa_logs_table.c.query_text,
+                qa_logs_table.c.answer_text,
+                qa_logs_table.c.sources,
+                qa_logs_table.c.run_at
+            )
+            .where(qa_logs_table.c.session_id == session_id)
+            .where(qa_logs_table.c.user_id == user_id)
+            .order_by(qa_logs_table.c.run_at.asc())
+        ).fetchall()
+    
+    history = []
+    for r in rows:
+        history.append({
+            "query_text": r.query_text,
+            "answer_text": r.answer_text,
+            "sources": json.loads(r.sources) if r.sources else [],
+            "run_at": str(r.run_at) if r.run_at else ""
+        })
+    return history

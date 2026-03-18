@@ -10,10 +10,10 @@ from generation.llm_handler import generate_answer, get_available_llms
 from generation.answer_store import save_qa, save_comparison
 
 
-def _save_qa_background(query, retrieval_output, generation_result, prompt, sources):
+def _save_qa_background(query, retrieval_output, generation_result, prompt, sources, session_id=None, user_id=None):
     """Save Q&A to PostgreSQL in a background thread (non-blocking)."""
     try:
-        record_id = save_qa(query, retrieval_output, generation_result, prompt, sources)
+        record_id = save_qa(query, retrieval_output, generation_result, prompt, sources, session_id, user_id)
         print(f"💾 Q&A saved to PostgreSQL (id: {record_id})")
     except Exception as e:
         print(f"⚠️  Background DB save failed: {e}")
@@ -21,7 +21,7 @@ def _save_qa_background(query, retrieval_output, generation_result, prompt, sour
 
 def run_rag_query(query, qdrant_client, collection_name, embedding_model,
                   chunks, retriever_type="similarity", llm_key="phi3-mini",
-                  top_k=5) -> dict:
+                  top_k=5, session_id=None, user_id=None) -> dict:
     """Full RAG pipeline: retrieve → build prompt → generate → store.
     DB save runs in background thread so the response returns immediately."""
     query_vector = embed_query(query, embedding_model)
@@ -49,7 +49,17 @@ def run_rag_query(query, qdrant_client, collection_name, embedding_model,
             "input_tokens": 0, "output_tokens": 0, "cost_usd": 0, "record_id": None,
         }
 
-    prompt = build_prompt(query, retrieved_chunks)
+    chat_history_str = ""
+    if session_id and user_id:
+        from core.database import get_session_history
+        history = get_session_history(session_id, user_id)[-3:] # last 3 turns
+        if history:
+            turns = []
+            for h in history:
+                turns.append(f"User: {h['query_text']}\nDeepRAG: {h['answer_text']}")
+            chat_history_str = "\n\n".join(turns)
+
+    prompt = build_prompt(query, retrieved_chunks, chat_history_str)
     sources = extract_sources(retrieved_chunks)
     generation_result = generate_answer(prompt, llm_key)
     generation_result["answer"] = format_answer_with_sources(generation_result["answer"], sources)
@@ -57,7 +67,7 @@ def run_rag_query(query, qdrant_client, collection_name, embedding_model,
     # Save to DB in background thread — don't block the response
     thread = threading.Thread(
         target=_save_qa_background,
-        args=(query, retrieval_output, generation_result, prompt, sources),
+        args=(query, retrieval_output, generation_result, prompt, sources, session_id, user_id),
         daemon=True,
     )
     thread.start()
@@ -82,7 +92,7 @@ def run_rag_query(query, qdrant_client, collection_name, embedding_model,
 
 def stream_rag_query(query, qdrant_client, collection_name, embedding_model,
                      chunks, retriever_type="similarity", llm_key="groq-llama8b",
-                     top_k=5):
+                     top_k=5, session_id=None, user_id=None):
     """Streaming RAG pipeline: retrieve → build prompt → stream tokens → save.
     Yields JSON-serializable dicts with 'event' and 'data' keys for SSE."""
     import json
@@ -109,7 +119,17 @@ def stream_rag_query(query, qdrant_client, collection_name, embedding_model,
         yield {"event": "done", "data": {"latency_seconds": retrieval_output.get("latency_seconds", 0), "cost_usd": 0, "record_id": 0}}
         return
 
-    prompt = build_prompt(query, retrieved_chunks)
+    chat_history_str = ""
+    if session_id and user_id:
+        from core.database import get_session_history
+        history = get_session_history(session_id, user_id)[-3:] # last 3 turns
+        if history:
+            turns = []
+            for h in history:
+                turns.append(f"User: {h['query_text']}\nDeepRAG: {h['answer_text']}")
+            chat_history_str = "\n\n".join(turns)
+
+    prompt = build_prompt(query, retrieved_chunks, chat_history_str)
     sources = extract_sources(retrieved_chunks)
 
     # Send retrieval metadata to frontend immediately
@@ -154,7 +174,7 @@ def stream_rag_query(query, qdrant_client, collection_name, embedding_model,
     # Save to DB in background thread
     thread = threading.Thread(
         target=_save_qa_background,
-        args=(query, retrieval_output, generation_result, prompt, sources),
+        args=(query, retrieval_output, generation_result, prompt, sources, session_id, user_id),
         daemon=True,
     )
     thread.start()

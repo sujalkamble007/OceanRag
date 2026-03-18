@@ -127,7 +127,7 @@ Respond in EXACTLY this JSON format (no extra text):
 def load_testset() -> pd.DataFrame:
     """Load existing testset from CSV."""
     if Path(TESTSET_PATH).exists():
-        df = pd.read_csv(TESTSET_PATH)
+        df = pd.read_csv(TESTSET_PATH, on_bad_lines="skip")
         df.columns = df.columns.str.strip()  # Strip whitespace from column names
         print(f"📋 Loaded testset: {len(df)} questions from {TESTSET_PATH}")
         return df

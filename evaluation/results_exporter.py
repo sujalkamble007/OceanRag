@@ -159,39 +159,53 @@ def generate_chart_data(results: list) -> dict:
 
     df = pd.DataFrame(results)
 
-    # ── precision_vs_recall ──────────────────────────────────────────
-    precision_vs_recall = []
+    # ── precision_recall_scatter ─────────────────────────────────────
+    precision_recall_scatter = []
     if "retriever_type" in df.columns:
         for name, group in df.groupby("retriever_type"):
-            precision_vs_recall.append({
+            data_points = []
+            # We can plot each individual chunking strategy as a dot for this retriever
+            for _, row in group.drop_duplicates(subset=['chunk_strategy']).iterrows():
+                data_points.append({
+                    "name": str(row.get("chunk_strategy", "Config")),
+                    "precision": round(float(row["precision_at_k"]), 4),
+                    "recall": round(float(row["recall_at_k"]), 4),
+                })
+            precision_recall_scatter.append({
                 "retriever": str(name),
-                "precision": round(float(group["precision_at_k"].mean()), 4),
-                "recall": round(float(group["recall_at_k"].mean()), 4),
+                "data": data_points
             })
 
-    # ── latency_by_llm ───────────────────────────────────────────────
-    latency_by_llm = []
+    # ── latency_bar ──────────────────────────────────────────────────
+    latency_bar = []
     if "llm_name" in df.columns:
         for name, group in df.groupby("llm_name"):
             provider = "Groq" if "Groq" in str(name) else "HuggingFace"
-            latency_by_llm.append({
-                "llm": str(name),
+            latency_bar.append({
+                "llm_name": str(name),
                 "provider": provider,
                 "avg_latency": round(float(group["latency_seconds"].mean()), 3),
             })
-        latency_by_llm.sort(key=lambda x: x["avg_latency"])
+        latency_bar.sort(key=lambda x: x["avg_latency"])
 
-    # ── faithfulness_by_llm ──────────────────────────────────────────
-    faithfulness_by_llm = []
-    if "llm_name" in df.columns:
-        for name, group in df.groupby("llm_name"):
-            faithfulness_by_llm.append({
-                "llm": str(name),
-                "faithfulness": round(float(group["faithfulness"].mean()), 4),
-                "answer_relevancy": round(float(group["answer_relevancy"].mean()), 4),
-            })
+    # ── retriever_radar ──────────────────────────────────────────────
+    retriever_radar = []
+    if "retriever_type" in df.columns:
+        metrics = ["precision_at_k", "recall_at_k", "mrr", "hit_rate", "faithfulness"]
+        metric_display = ["Precision", "Recall", "MRR", "Hit Rate", "Faith"]
+        
+        avgs = {}
+        for name, group in df.groupby("retriever_type"):
+            name_lower = str(name).lower()
+            avgs[name_lower] = {m: round(float(group[m].mean()), 4) for m in metrics}
+            
+        for i, m in enumerate(metrics):
+            radar_row = {"metric": metric_display[i]}
+            for r_name in ["similarity", "mmr", "hybrid"]:
+                radar_row[r_name] = avgs.get(r_name, {}).get(m, 0.0)
+            retriever_radar.append(radar_row)
 
-    # ── chunking_impact ──────────────────────────────────────────────
+    # ── chunking_impact (Bar) ─────────────────────────────────────────
     chunking_impact = []
     if "chunk_strategy" in df.columns:
         for name, group in df.groupby("chunk_strategy"):
@@ -200,8 +214,9 @@ def generate_chart_data(results: list) -> dict:
                 "precision": round(float(group["precision_at_k"].mean()), 4),
                 "recall": round(float(group["recall_at_k"].mean()), 4),
             })
+        chunking_impact.sort(key=lambda x: x["recall"], reverse=True)
 
-    # ── embedding_comparison ─────────────────────────────────────────
+    # ── embedding_comparison (Bar) ───────────────────────────────────
     embedding_comparison = []
     if "embedding_model" in df.columns:
         for name, group in df.groupby("embedding_model"):
@@ -210,21 +225,9 @@ def generate_chart_data(results: list) -> dict:
                 "precision": round(float(group["precision_at_k"].mean()), 4),
                 "faithfulness": round(float(group["faithfulness"].mean()), 4),
             })
+        embedding_comparison.sort(key=lambda x: x["precision"], reverse=True)
 
-    # ── retriever_radar ──────────────────────────────────────────────
-    retriever_radar = []
-    if "retriever_type" in df.columns:
-        for name, group in df.groupby("retriever_type"):
-            retriever_radar.append({
-                "retriever": str(name),
-                "precision": round(float(group["precision_at_k"].mean()), 4),
-                "recall": round(float(group["recall_at_k"].mean()), 4),
-                "mrr": round(float(group["mrr"].mean()), 4),
-                "hit_rate": round(float(group["hit_rate"].mean()), 4),
-                "faithfulness": round(float(group["faithfulness"].mean()), 4),
-            })
-
-    # ── cost_vs_quality ──────────────────────────────────────────────
+    # ── cost_vs_quality (Scatter) ────────────────────────────────────
     cost_vs_quality = []
     if "llm_name" in df.columns:
         for name, group in df.groupby("llm_name"):
@@ -243,12 +246,11 @@ def generate_chart_data(results: list) -> dict:
             })
 
     chart_data = {
-        "precision_vs_recall": precision_vs_recall,
-        "latency_by_llm": latency_by_llm,
-        "faithfulness_by_llm": faithfulness_by_llm,
+        "precision_recall_scatter": precision_recall_scatter,
+        "latency_bar": latency_bar,
+        "retriever_radar": retriever_radar,
         "chunking_impact": chunking_impact,
         "embedding_comparison": embedding_comparison,
-        "retriever_radar": retriever_radar,
         "cost_vs_quality": cost_vs_quality,
     }
 

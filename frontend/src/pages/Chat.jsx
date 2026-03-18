@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Settings2, FileText, ChevronDown, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Settings2, FileText, ChevronDown, ThumbsUp, ThumbsDown, MessageSquarePlus, MessageCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '../api/client';
 import useAuthStore from '../store/authStore';
 
@@ -10,6 +11,53 @@ const Chat = () => {
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Session Management
+    const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
+    const [sessions, setSessions] = useState([]);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    const loadSessions = async () => {
+        try {
+            const { data } = await apiClient.get('/history/sessions');
+            setSessions(data.sessions || []);
+        } catch (err) {
+            console.error("Failed to load sessions:", err);
+        }
+    };
+
+    useEffect(() => {
+        loadSessions();
+    }, []);
+
+    const handleNewChat = () => {
+        setSessionId(crypto.randomUUID());
+        setMessages([{ role: 'assistant', content: 'Hello! I am the OceanRAG assistant. Ask me anything about Deep-Sea Governance & UNCLOS regulations.' }]);
+        setInput('');
+    };
+
+    const loadSessionDetails = async (id) => {
+        try {
+            const { data } = await apiClient.get(`/history/sessions/${id}`);
+            const history = data.history || [];
+            if (history.length > 0) {
+                const formattedMessages = [];
+                history.forEach(turn => {
+                    formattedMessages.push({ role: 'user', content: turn.query_text });
+                    formattedMessages.push({
+                        role: 'assistant',
+                        content: turn.answer_text,
+                        sources: turn.sources,
+                        streaming: false
+                    });
+                });
+                setMessages(formattedMessages);
+                setSessionId(id);
+            }
+        } catch (err) {
+            console.error("Failed to load session details:", err);
+        }
+    };
 
     // Controls
     const [llmKey, setLlmKey] = useState('groq-llama8b');
@@ -46,6 +94,7 @@ const Chat = () => {
                 },
                 body: JSON.stringify({
                     query: userMessage.content,
+                    session_id: sessionId,
                     llm_key: llmKey,
                     retriever_type: retrieverType,
                     top_k: Number(topK),
@@ -121,6 +170,7 @@ const Chat = () => {
             });
         } finally {
             setLoading(false);
+            loadSessions(); // Refresh sidebar after newly created session turn
         }
     };
 
@@ -140,9 +190,71 @@ const Chat = () => {
     };
 
     return (
-        <div className="flex h-full gap-6">
+        <div className="flex h-full">
+            {/* Left Sidebar: Sessions */}
+            <AnimatePresence initial={false}>
+                {isSidebarOpen && (
+                    <motion.div
+                        initial={{ width: 0, opacity: 0, marginRight: 0 }}
+                        animate={{ width: 256, opacity: 1, marginRight: 24 }} // 256px = 16rem (w-64), 24px = 1.5rem (mr-6)
+                        exit={{ width: 0, opacity: 0, marginRight: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="hidden md:block h-full shrink-0 overflow-hidden"
+                    >
+                        <div className="w-64 bg-ocean-800/50 border border-ocean-700 rounded-2xl p-4 flex flex-col gap-4 shadow-xl h-full">
+                            <button
+                                onClick={handleNewChat}
+                                className="flex items-center gap-2 justify-center w-full bg-ocean-400 hover:bg-ocean-300 text-ocean-900 font-semibold py-3 px-4 rounded-xl transition-colors shrink-0"
+                            >
+                                <MessageSquarePlus size={18} />
+                                <span>New Chat</span>
+                            </button>
+
+                            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                                <h3 className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3 px-2">Recent Chats</h3>
+                                {sessions.length === 0 ? (
+                                    <p className="text-sm text-slate-500 px-2 italic">No previous chats.</p>
+                                ) : (
+                                    sessions.map((session) => (
+                                        <button
+                                            key={session.session_id}
+                                            onClick={() => loadSessionDetails(session.session_id)}
+                                            className={`w-full text-left flex items-start gap-3 px-3 py-3 rounded-xl transition-colors ${sessionId === session.session_id ? 'bg-ocean-700/80 text-ocean-300 border border-ocean-600' : 'hover:bg-ocean-700/40 text-slate-300'}`}
+                                        >
+                                            <MessageCircle size={16} className="shrink-0 mt-0.5" />
+                                            <div className="overflow-hidden">
+                                                <p className="text-sm truncate font-medium">{session.title || "New Chat"}</p>
+                                                {session.last_active && <p className="text-[10px] text-slate-500 mt-1">{new Date(session.last_active).toLocaleDateString()}</p>}
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-ocean-800/50 border border-ocean-700 rounded-2xl overflow-hidden shadow-xl">
+            <div className="flex-1 flex flex-col bg-ocean-800/50 border border-ocean-700 rounded-2xl overflow-hidden shadow-xl h-full">
+                {/* Chat Top Header */}
+                <div className="p-4 border-b border-ocean-700/50 bg-ocean-900/40 flex items-center justify-between shrink-0">
+                    <button 
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="p-2 bg-ocean-800 hover:bg-ocean-700 border border-ocean-600 rounded-lg transition-colors text-ocean-300 flex items-center gap-2"
+                        title={isSidebarOpen ? "Close history" : "Open history"}
+                    >
+                        {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+                        <span className="text-sm font-semibold hidden sm:inline">{isSidebarOpen ? "Hide History" : "Show History"}</span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <Sparkles size={16} className="text-ocean-400" />
+                        <h2 className="text-sm font-bold text-white tracking-widest uppercase">Ocean<span className="text-ocean-400">RAG</span></h2>
+                    </div>
+                    {/* Placeholder for layout balance */}
+                    <div className="w-24 hidden sm:block"></div> 
+                </div>
+
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {messages.map((msg, idx) => (
@@ -251,7 +363,7 @@ const Chat = () => {
             </div>
 
             {/* Right Sidebar Controls */}
-            <div className="w-80 bg-ocean-800/50 border border-ocean-700 rounded-2xl p-6 flex flex-col gap-6 shadow-xl hidden lg:flex">
+            <div className="w-80 bg-ocean-800/50 border border-ocean-700 rounded-2xl p-6 flex-col gap-6 shadow-xl hidden lg:flex ml-6 shrink-0 h-full overflow-y-auto">
                 <div className="flex items-center gap-2 mb-2 pb-4 border-b border-ocean-700">
                     <Settings2 size={20} className="text-ocean-400" />
                     <h2 className="text-lg font-bold text-white">Parameters</h2>
@@ -270,7 +382,7 @@ const Chat = () => {
                                 <option value="groq-llama8b">Llama 3 (8B) - Fast</option>
                                 {user?.role !== 'common_user' && <option value="groq-llama70b">Llama 3 (70B) - Smart</option>}
                                 {user?.role !== 'common_user' && <option value="zephyr-7b">Zephyr 7B - HF</option>}
-                                <option value="qwen2.5-72b">Qwen 2.5 72B - HF</option>
+                                {(user?.role === 'admin' || user?.role === 'researcher') && <option value="qwen2.5-72b">Qwen 2.5 72B - HF</option>}
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                                 <ChevronDown size={14} />
@@ -292,7 +404,7 @@ const Chat = () => {
                             >
                                 <option value="similarity">Similarity (Fast)</option>
                                 {user?.role !== 'common_user' && <option value="mmr">MMR (Diverse)</option>}
-                                {user?.role !== 'common_user' && <option value="hybrid">Hybrid (Contextual)</option>}
+                                {(user?.role === 'admin' || user?.role === 'researcher') && <option value="hybrid">Hybrid (Contextual)</option>}
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                                 <ChevronDown size={14} />

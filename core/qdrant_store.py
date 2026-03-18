@@ -57,7 +57,7 @@ def upsert_chunks(client: QdrantClient, collection_name: str, embedded_chunks: l
             "chunk_strategy": item["metadata"].get("chunk_strategy", ""),
             "chunk_size": item["metadata"].get("chunk_size", 0),
             "char_count": item["metadata"].get("char_count", 0),
-            "content_preview": item["page_content"][:200],
+            "page_content": item["page_content"],
         }
         points.append(PointStruct(id=point_id, vector=item["vector"], payload=payload))
 
@@ -89,13 +89,13 @@ def search_similar(client: QdrantClient, collection_name: str, query_vector: lis
         result = {
             "score": hit.score,
             "payload": hit.payload,
-            "page_content": hit.payload.get("content_preview", ""),
+            "page_content": hit.payload.get("page_content", ""),
         }
         formatted.append(result)
         print(f"  [{i}] Score: {hit.score:.4f} | "
               f"{hit.payload.get('filename', 'N/A')} | "
               f"Page {hit.payload.get('page_number', '?')}")
-        preview = hit.payload.get("content_preview", "")[:80]
+        preview = hit.payload.get("page_content", "")[:80]
         print(f"      Preview: {preview}...")
     return formatted
 

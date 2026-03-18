@@ -388,6 +388,7 @@ class DeepRAGPipeline:
         llm_key: str = "groq-llama8b",
         top_k: int = 5,
         user_id: int = None,
+        session_id: str = None,
     ) -> dict:
         """
         Thin wrapper around generation.run_rag_query for the FastAPI backend.
@@ -405,6 +406,8 @@ class DeepRAGPipeline:
             retriever_type=retriever_type,
             llm_key=llm_key,
             top_k=top_k,
+            user_id=user_id,
+            session_id=session_id
         )
 
         # Build structured retrieved_chunks list for API response
@@ -440,6 +443,7 @@ class DeepRAGPipeline:
         llm_key: str = "groq-llama8b",
         top_k: int = 5,
         user_id: int = None,
+        session_id: str = None,
     ):
         """Streaming wrapper for the FastAPI streaming endpoint.
         Yields SSE event dicts from generation.stream_rag_query."""
@@ -455,5 +459,7 @@ class DeepRAGPipeline:
             retriever_type=retriever_type,
             llm_key=llm_key,
             top_k=top_k,
+            user_id=user_id,
+            session_id=session_id
         )
 

@@ -145,6 +145,61 @@ const Dashboard = () => {
                         </div>
                     </div>
 
+                    {/* Chunking Impact Bar Chart */}
+                    {chartData.chunking_impact && (
+                        <div className="bg-ocean-800/50 border border-ocean-700 rounded-2xl p-6">
+                            <h3 className="text-base font-bold text-slate-200 mb-6">Chunking Strategy vs Recall</h3>
+                            <div className="h-72">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={chartData.chunking_impact} margin={{ top: 20, right: 20, bottom: 0, left: 0 }} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#233554" horizontal={false} />
+                                        <XAxis type="number" stroke="#64748b" domain={[0, 1]} />
+                                        <YAxis type="category" dataKey="strategy" stroke="#64748b" width={100} tick={{ fontSize: 12 }} />
+                                        <RechartsTooltip cursor={{ fill: '#233554' }} content={<CustomTooltip />} />
+                                        <Bar dataKey="recall" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Embedding Comparison Bar Chart */}
+                    {chartData.embedding_comparison && (
+                        <div className="bg-ocean-800/50 border border-ocean-700 rounded-2xl p-6">
+                            <h3 className="text-base font-bold text-slate-200 mb-6">Embedding Model Precision</h3>
+                            <div className="h-72">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={chartData.embedding_comparison} margin={{ top: 20, right: 20, bottom: 0, left: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#233554" vertical={false} />
+                                        <XAxis dataKey="model" stroke="#64748b" />
+                                        <YAxis stroke="#64748b" domain={[0, 1]} />
+                                        <RechartsTooltip cursor={{ fill: '#233554' }} content={<CustomTooltip />} />
+                                        <Bar dataKey="precision" fill="#64ffda" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Cost vs Quality Scatter */}
+                    {chartData.cost_vs_quality && (
+                        <div className="bg-ocean-800/50 border border-ocean-700 rounded-2xl p-6 lg:col-span-2">
+                            <h3 className="text-base font-bold text-slate-200 mb-6">Cost vs Composite Quality by LLM</h3>
+                            <div className="h-72">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#233554" />
+                                        <XAxis type="number" dataKey="cost" name="Cost ($/query)" stroke="#64748b" tickFormatter={(v) => `$${v.toFixed(4)}`} />
+                                        <YAxis type="number" dataKey="quality" name="Quality Score" stroke="#64748b" domain={[0, 1]} tickFormatter={(v) => v.toFixed(2)} />
+                                        <ZAxis type="category" dataKey="llm" name="LLM Model" />
+                                        <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
+                                        <Scatter name="LLMs" data={chartData.cost_vs_quality} fill="#f59e0b" />
+                                    </ScatterChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Radar Chart */}
                     {chartData.retriever_radar && (
                         <div className="bg-ocean-800/50 border border-ocean-700 rounded-2xl p-6 lg:col-span-2">

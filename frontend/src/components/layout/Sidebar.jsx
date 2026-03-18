@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { MessageSquare, BarChart2, Clock, FlaskConical } from 'lucide-react';
+import { MessageSquare, BarChart2, Clock, FlaskConical, TestTube2 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
 const Sidebar = () => {
@@ -14,6 +14,7 @@ const Sidebar = () => {
 
     if (canViewExperiments) {
         links.push({ to: '/experiments', icon: FlaskConical, label: 'Experiments' });
+        links.push({ to: '/eval-results', icon: TestTube2, label: 'Research Results' });
     }
 
     return (

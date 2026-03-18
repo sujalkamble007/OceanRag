@@ -8,9 +8,11 @@ from core.config import DEFAULT_CHUNK_CONFIG, DEFAULT_EMBEDDING_CONFIG
 
 
 def save_qa(query: str, retrieval_output: dict, generation_result: dict,
-            prompt: dict, sources: list) -> int:
+            prompt: dict, sources: list, session_id: str = None, user_id: int = None) -> int:
     """Save a complete Q&A record to PostgreSQL qa_logs. Returns new record id."""
     qa_data = {
+        "session_id": session_id,
+        "user_id": user_id,
         "query_text": query,
         "retriever_type": retrieval_output.get("retriever_type", ""),
         "embedding_model": DEFAULT_EMBEDDING_CONFIG["name"],

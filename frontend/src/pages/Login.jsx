@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import apiClient from '../api/client';
 import useAuthStore from '../store/authStore';
 import { Waves } from 'lucide-react';
@@ -37,7 +38,12 @@ const Login = () => {
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-ocean-400/10 rounded-full blur-[120px] pointer-events-none"></div>
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-            <div className="w-full max-w-md bg-ocean-800/80 backdrop-blur-xl border border-ocean-700 p-8 rounded-2xl shadow-2xl relative z-10">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.25, 0.4, 0.2, 1] }}
+                className="w-full max-w-md bg-ocean-800/80 backdrop-blur-xl border border-ocean-700 p-8 rounded-2xl shadow-2xl relative z-10"
+            >
                 <div className="flex flex-col items-center mb-8">
                     <div className="w-16 h-16 bg-ocean-700 rounded-2xl flex items-center justify-center mb-4 border border-ocean-400/20 shadow-lg">
                         <Waves size={32} className="text-ocean-400" />
@@ -79,7 +85,7 @@ const Login = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-ocean-400 hover:bg-ocean-400/90 text-ocean-900 font-bold py-3 rounded-xl transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(100,255,218,0.2)]"
+                        className="w-full bg-ocean-400 hover:bg-ocean-400/90 text-ocean-900 font-extrabold tracking-wide py-3 rounded-xl transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,210,255,0.3)]"
                     >
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
@@ -91,7 +97,7 @@ const Login = () => {
                         Register here
                     </Link>
                 </p>
-            </div>
+            </motion.div>
         </div>
     );
 };

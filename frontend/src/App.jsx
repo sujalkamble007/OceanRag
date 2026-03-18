@@ -5,12 +5,14 @@ import useAuthStore from './store/authStore';
 import MainLayout from './components/layout/MainLayout';
 
 // Pages
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
 import Dashboard from './pages/Dashboard';
 import History from './pages/History';
 import Experiments from './pages/Experiments';
+import EvalResults from './pages/EvalResults';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user } = useAuthStore();
@@ -26,26 +28,37 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* Protected Routes inside MainLayout */}
-        <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="/chat" replace />} />
-          <Route path="chat" element={<Chat />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="history" element={<History />} />
+        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/history" element={<History />} />
 
           {/* Admin/Researcher/Student only */}
           <Route
-            path="experiments"
+            path="/experiments"
             element={
               <ProtectedRoute allowedRoles={['admin', 'researcher', 'student']}>
                 <Experiments />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/eval-results"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'researcher', 'student']}>
+                <EvalResults />
+              </ProtectedRoute>
+            }
+          />
         </Route>
+        
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

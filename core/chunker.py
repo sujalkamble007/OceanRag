@@ -24,12 +24,17 @@ def chunk_documents(docs: list, chunk_config: dict, output_dir: str) -> list:
     chunk_size = chunk_config["size"]
     chunk_overlap = chunk_config["overlap"]
 
-    splitter = RecursiveCharacterTextSplitter(
-        separators=["\n\n", "\n", ". ", " ", ""],
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        length_function=len,
-    )
+    # Sentence-based chunking uses NLTK sentence tokenizer
+    if chunk_config.get("type") == "sentence":
+        from langchain_text_splitters import NLTKTextSplitter
+        splitter = NLTKTextSplitter(chunk_size=chunk_size if chunk_size > 0 else 512)
+    else:
+        splitter = RecursiveCharacterTextSplitter(
+            separators=["\n\n", "\n", ". ", " ", ""],
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            length_function=len,
+        )
 
     chunks = splitter.split_documents(docs)
 

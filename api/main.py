@@ -22,6 +22,7 @@ from api.routers.experiments import router as experiments_router
 from api.routers.dashboard import router as dashboard_router
 from api.routers.feedback import router as feedback_router
 from api.routers.documents import router as documents_router
+from api.routers.eval_results import router as eval_router
 
 # ── Global pipeline singleton ───────────────────────────────────────────────
 _pipeline: DeepRAGPipeline = None
@@ -104,6 +105,7 @@ app.include_router(experiments_router)
 app.include_router(dashboard_router)
 app.include_router(feedback_router)
 app.include_router(documents_router)
+app.include_router(eval_router)
 
 
 # ── Root endpoints ───────────────────────────────────────────────────────────

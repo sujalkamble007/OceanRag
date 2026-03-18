@@ -13,6 +13,7 @@ router = APIRouter(prefix="/query", tags=["query"])
 
 class QueryRequest(BaseModel):
     query: str
+    session_id: str | None = None
     retriever_type: str = "similarity"
     llm_key: str = "groq-llama8b"
     top_k: int = 5
@@ -86,6 +87,7 @@ def query(req: QueryRequest, current_user: dict = Depends(get_current_user)):
     try:
         result = pipeline.run_rag_query(
             query=augmented_query,
+            session_id=req.session_id,
             retriever_type=req.retriever_type,
             llm_key=req.llm_key,
             top_k=top_k,
@@ -125,6 +127,7 @@ def query_stream(req: QueryRequest, current_user: dict = Depends(get_current_use
         try:
             for event in pipeline.stream_rag_query_api(
                 query=augmented_query,
+                session_id=req.session_id,
                 retriever_type=req.retriever_type,
                 llm_key=req.llm_key,
                 top_k=top_k,

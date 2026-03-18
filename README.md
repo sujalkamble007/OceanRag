@@ -1,229 +1,489 @@
 <div align="center">
   <h1>🌊 OceanRAG</h1>
-  <p><strong>A Deep-Sea Governance Research Assistant, built from scratch.</strong></p>
-  <p><em>Ever wondered how AI can read 7,000 pages of dense legal text and give you the exact answer you need in 0.5 seconds? I built a complete RAG system to find out.</em></p>
+  <p><strong>Production-grade Deep-Sea Governance Research Assistant powered by a full-stack RAG pipeline.</strong></p>
+  <p><em>Ingests 7,000+ pages of dense PDF legal text, retrieves context in under a second, and generates grounded answers with full citation trails — with a beautiful multi-user web interface built on top.</em></p>
 
   <p>
-    <img src="https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge&logo=python" alt="Python 3.13" />
-    <img src="https://img.shields.io/badge/LangChain-Integration-green?style=for-the-badge&logo=langchain" alt="LangChain" />
+    <img src="https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge&logo=python" alt="Python" />
+    <img src="https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi" alt="FastAPI" />
+    <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react" alt="React" />
     <img src="https://img.shields.io/badge/Qdrant-Vector_DB-purple?style=for-the-badge" alt="Qdrant" />
-    <img src="https://img.shields.io/badge/PostgreSQL-Neon-blue?style=for-the-badge&logo=postgresql" alt="Neon Postgres" />
+    <img src="https://img.shields.io/badge/Neon-PostgreSQL-blue?style=for-the-badge&logo=postgresql" alt="Neon Postgres" />
   </p>
 </div>
 
 <br/>
 
 <div align="center">
-  <a href="#-the-story">The Story</a> • 
-  <a href="#-how-it-works">How It Works</a> • 
-  <a href="#-features">Features</a> • 
-  <a href="#-quick-start">Quick Start</a> • 
-  <a href="#-what-i-learned">What I Learned</a> • 
-  <a href="#-architecture">Architecture</a>
+  <a href="#-overview">Overview</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-architecture">Architecture</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-project-structure">Project Structure</a> •
+  <a href="#-api-reference">API Reference</a> •
+  <a href="#-user-roles">User Roles</a>
 </div>
 
 ---
 
-## 📖 The Story
+## 🌐 Overview
 
-Retrieval-Augmented Generation (RAG) is the backbone of modern enterprise AI. It's the magic trick that stops LLMs from hallucinating by grounding them in real documents.
+**OceanRAG** is a production-ready research assistant for deep-sea mining governance and UNCLOS regulations. It combines a sophisticated RAG (Retrieval-Augmented Generation) backend with a modern single-page web application.
 
-But it's not magic. It's math, vector geometry, and data engineering.
+Every query goes through a 4-phase pipeline:
+1. **Document Ingestion** — parses, chunks, embeds, and stores 100+ PDFs (~37,000 chunks)
+2. **Hybrid Retrieval** — fuses dense vector search and BM25 keyword search for precision recall
+3. **LLM Generation** — injects retrieved context into a grounded prompt and streams the response
+4. **Evaluation Matrix** — benchmarks every configuration combination to find statistically optimal hyper-parameters
 
-I wanted to deeply understand how a complex RAG pipeline actually works. Not by just chaining a few high-level API calls together in a 10-line script — but by building the entire end-to-end system myself. 
-
-**OceanRAG** is the result — an intelligent research assistant designed specifically for deep-sea mining regulations and UNCLOS (United Nations Convention on the Law of the Sea) governance. It:
-
-- 📄 **Ingests** 100+ dense PDF research papers (over 7,000 pages)
-- 🔪 **Chunks** them intelligently into 37,000+ searchable pieces
-- 🧠 **Embeds** text into 384-dimensional mathematical vectors
-- 🗂️ **Indexes** everything into a highly scalable vector database (Qdrant)
-- ⚖️ **Retrieves** the perfect context using Hybrid Search (Vector + BM25 keyword matching)
-- 🤖 **Generates** grounded, accurate answers using state-of-the-art open weights LLMs (Llama 3.3, Qwen 2.5, Zephyr)
-- 📊 **Evaluates** itself using automated NLP and optional RAGAS metrics to find the statistically best configuration
-
-Every part of the pipeline — from the initial PDF parsing to the final evaluation matrix — was built to be fast, modular, and observable.
-
----
-
-## 🧠 How It Works
-
-Let's walk through what happens when you ask OceanRAG: *"What are the environmental obligations under UNCLOS?"*
-
-### Step 1: You Ask → The Query is Embedded
-The moment you hit enter, your text query is passed through a local HuggingFace embedding model (`all-MiniLM-L6-v2`). The model converts your English words into a 384-dimensional array of numbers that capture the complex semantic meaning of your question.
-
-### Step 2: Finding Relevant Context → Vector Search
-Your 384-dimensional "question vector" is sent to Qdrant Cloud. Qdrant compares it against the 37,013 "document vectors" stored in the database. 
-
-It uses **Cosine Similarity** to find the vectors pointing in the exact same mathematical direction as your question. But pure vector search isn't always enough — sometimes you need exact keyword matches. So OceanRAG uses **Hybrid Search**:
-- **Dense Retrieval (Vectors)**: Understands the *meaning* (e.g., matching "environmental obligations" with "ecological duties").
-- **Sparse Retrieval (BM25)**: Ensures exact acronyms and specific legal terms like "UNCLOS Article 145" are caught perfectly.
-
-The scores are fused together, returning the top 5 most relevant chunks in just `~0.5 seconds`.
-
-### Step 3: Giving the LLM a Brain → Generation
-Those top 5 chunks (along with their original PDF filenames and page numbers) are injected into a highly specific system prompt. 
-
-This massive prompt is sent to a high-speed inference engine (like Groq running Llama 3.3 70B). The instruction is simple: *"You are an expert. Answer the question using ONLY the provided text. Cite your sources."*
-
-### Step 4: Tracking Everything → Observability
-The answer comes back in milliseconds. But OceanRAG doesn't stop there. 
-1. It shows you the answer with exact citations (e.g. `[Publications-30.pdf, Page 75]`).
-2. It logs the exact question, the retrieved chunks, the latency, the cost (down to fractions of a cent), and the LLM's response into a **Neon PostgreSQL Database**. 
-
-You now have a permanent audit trail of exactly how the AI arrived at its conclusion.
+The system features full user authentication, role-based access control, **Conversational Memory** (chat history tied to sessions), real-time streaming, analytics dashboards, and an automated research evaluation framework.
 
 ---
 
 ## ✨ Features
 
-### 📄 Document Processing Engine
-- PDF parsing with built-in timeout protection for massive files
-- Deterministic chunking (fixes identical chunk ID issues over subsequent runs)
-- Full relational metadata tracking (which chunk belongs to which page of which document)
+### 🤖 Core RAG Pipeline
+| Feature | Detail |
+|---|---|
+| Document Ingestion | LangChain PDF loader with timeout protection |
+| Chunking Strategies | 6+ strategies: Fixed, Sentence, Recursive, Semantic |
+| Embedding Models | `all-MiniLM-L6-v2`, `bge-small-en-v1.5`, `paraphrase-MiniLM-L6-v2` |
+| Retrieval Modes | `Similarity`, `MMR (Max Marginal Relevance)`, `Hybrid (BM25 + Vector)` |
+| LLM Support | Groq: Llama 3 (8B/70B) • HuggingFace: Qwen 2.5 72B, Zephyr 7B |
+| Response Streaming | Real-time token-by-token Server-Sent Events (SSE) |
 
-### 🔍 Advanced Retrieval Techniques
-- **Pure Vector Similarity:** Blazing fast semantic matching.
-- **MMR (Max Marginal Relevance):** Fetches results that are highly relevant to your query, but *different* from each other, maximizing the diversity of the context window.
-- **Hybrid Search:** Fuses dense vector scores with BM25 sparse keyword scores for ultimate accuracy on technical domains.
+### 💬 Conversational Memory
+- Each chat session gets a persistent `session_id` (UUID)
+- Previous QA turns are injected into the LLM prompt automatically (last 3 turns)
+- Left sidebar slider lists all past sessions with dates and titles
+- Click any past session to restore full conversation history and continue chatting
+- New Chat button generates a fresh `session_id`
 
-### 🤖 Multi-LLM Generation & Router
-Easily swap the "brain" of the system. OceanRAG comes preconfigured to seamlessly route between:
-- **Groq API**: `llama-3.3-70b-versatile`, `llama-3.1-8b-instant` — ultra-fast inference context generation.
-- **HuggingFace API**: `Qwen/Qwen2.5-72B-Instruct`, `HuggingFaceH4/zephyr-7b-beta` — Free, high-quality open-source alternatives.
+### 👥 Multi-User Authentication
+- JWT-based secure authentication
+- Role-based access control with 4 roles:
+  - `common_user` — Basic chat access (Similarity retrieval, top-K capped at 3)
+  - `student` — Advanced retrieval, top-K up to 5
+  - `researcher` — All models, hybrid retrieval, Eval Matrix access
+  - `admin` — Full access, user management, all features
 
-### 📈 Evaluation Matrix (Phase 4)
-How do you know if your RAG is actually good? OceanRAG evaluates *itself*.
-The Evaluation Module automatically tests every combination of chunking strategy, embedding model, retriever, and LLM against a synthetic test set, outputting a composite score of:
-- **Retrieval Metrics**: Precision@K, Recall@K, Mean Reciprocal Rank (MRR), Hit Rate (Instant)
-- **NLP Metrics**: ROUGE-L, BLEU, BERTScore (Instant)
-- **RAGAS Metrics (Optional)**: Faithfulness, Answer Relevancy (Slower, requires LLM calls)
-- **NLP Metrics**: ROUGE-L, BLEU, BERTScore
+### 📊 Analytics & Research Evaluation
+- **Dashboard** — Q&A log viewer with filters, latency and cost tracking
+- **Research Results** — Automated 4-phase evaluation matrix:
+  - Phase A: Chunking strategy comparison
+  - Phase B: Embedding model comparison
+  - Phase C: Retriever × Top-K sweep
+  - Phase D: LLM head-to-head
+- Leaderboard with composite scores across all tested configurations
 
----
-
-## 🚀 Quick Start
-
-### What You Need
-- **Python 3.13**
-- A free [Groq API Key](https://console.groq.com/keys) (for the LLM)
-- A free [Qdrant Cloud API Key](https://cloud.qdrant.io/) (for the Vector DB)
-- A free [Neon PostgreSQL connection string](https://neon.tech/) (for the relational DB)
-
-### 3 Steps to Run
-
-**1. Clone the repo and setup virtual environment**
-```bash
-git clone https://github.com/sujalkamble007/OceanRAG.git
-cd OceanRAG
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install -e .  # Install the oceanrag package
-```
-
-**2. Set up your `.env` file**
-```env
-# Vector Database
-QDRANT_URL=https://your-cluster.cloud.qdrant.io
-QDRANT_API_KEY=your_qdrant_key
-QDRANT_COLLECTION_NAME=OceanRag
-
-# Relational Database
-POSTGRES_HOST=ep-your-db.url.neon.tech
-POSTGRES_PORT=5432
-POSTGRES_DB=neondb
-POSTGRES_USER=your_user
-POSTGRES_PASSWORD=your_password
-
-# LLMs
-GROQ_API_KEY=your_groq_key
-# Optional: HF_API_TOKEN=your_hf_token
-```
-
-**3. Run the interactive RAG pipeline**
-Assuming you have PDFs in `docs/Publications/`, run the ingestion and interact with it:
-```bash
-# Ingest docs into the DB (only need to do this once)
-python scripts/ingest.py
-
-# Ask questions in the interactive terminal
-python scripts/generate.py
-# Run evaluation (assumes you have a test set)
-# Run full evaluation (RAGAS + Latency + Context) - takes ~70 min
-python run_phase4.py
-# Run fast evaluation (Skip RAGAS for quick NLP/Retrieval benchmark) - takes ~2 mins
-python run_phase4.py --no-ragas
-```
-
----
-
-## 🎓 What I Learned
-
-Building a RAG system from scratch taught me more than tweaking parameters in a UI ever could. Here are the biggest takeaways:
-
-### 1. Vector Search isn't enough.
-Vector similarity is amazing for *concepts*. But if a user searches for an exact alphanumeric permit ID (`"Permit ISA-449-B"`), pure cosine similarity will struggle. Semantic embeddings map meaning, not exact characters. Implementing **Hybrid Search** (combining vectors with old-school BM25 keyword matching) was a masterclass in how modern enterprise search actually functions.
-
-### 2. Context Window Poisoning is real.
-If you just grab the top 10 most similar chunks, they are often perfectly valid, but highly redundant — basically the same sentence written 10 different ways across 10 pages. You waste your context window on zero new information. Implementing **Max Marginal Relevance (MMR)** forced me to mathematically penalize redundancy, giving the LLM a much broader, richer summary of the topic.
-
-### 3. "Good" RAG is hard to measure.
-"Vibes" aren't a metric. How do you objectively prove that your `Fixed 512 + 10% overlap` chunking strategy is better than `Fixed 1024`? The answer is building a sprawling evaluation matrix. Using automated judges (like RAGAS) to score Faithfulness and Context Precision taught me that building the pipeline is only 20% of the work; proving it works mathematically is the other 80%.
-
-### 4. Rate limits dictate architecture.
-When trying to generate an evaluation testset using a free-tier API, the process crashed immediately because it tried to process 7,000 pages in parallel. Understanding APIs forced me to implement smart document sampling, exponential backoff retries, and asynchronous batching mechanisms to survive strict rate limit envelopes.
+### 🎨 Frontend Interface
+- **Landing Page** — animated ocean-themed hero, feature highlights, CTA
+- **Top Navbar** — Logo, Chat Engine tab, Analytics & Research Results links, profile + logout
+- **Chat Interface** — animated collapsible session history sidebar, settings panel (LLM, retriever, top-K)
+- **Real-time Streaming** — token-by-token rendering with typing indicator
+- **Source Citations** — documents consulted shown beneath each answer
+- **Thumbs Up/Down Feedback** — per-answer rating stored in DB
+- Responsive dark design built with TailwindCSS + Framer Motion
 
 ---
 
 ## 🏗️ Architecture
+
+The system is built as three decoupled layers — a React SPA, a FastAPI backend, and a cloud-native data layer.
 
 ```mermaid
 graph TD
     classDef main fill:#f9f9f9,stroke:#333,stroke-width:2px;
     classDef db fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
     classDef ext fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    
-    subgraph "Phase 1: Ingestion & Indexing"
-        A[PDF Documents] --> B(LangChain PDFLoader)
-        B --> C{Recursive text chunking}
-        C --> D[HuggingFace local embeddings]
-        D --> E[(Qdrant Cloud Vectors)]
-        C --> F[(Neon Postgres Metadata)]
+    classDef ui fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef auth fill:#fce4ec,stroke:#c62828,stroke-width:2px;
+
+    subgraph "Phase 0: Frontend & Auth"
+        U[User Browser] --> LAND(Landing Page)
+        LAND --> LOGIN(Login / Register)
+        LOGIN --> JWT[JWT Token]
+        JWT --> CHAT(Chat Interface)
+        CHAT --> SIDEBAR(Session History Sidebar)
+        CHAT --> PARAMS(Parameters Panel)
     end
-    
+
+    subgraph "Phase 1: Document Ingestion & Indexing"
+        A[PDF Documents] --> B(LangChain PDFLoader)
+        B --> C{Chunking Strategies\nFixed · Sentence · Recursive}
+        C --> D[HuggingFace Embeddings\nMiniLM · BGE · SBERT]
+        D --> E[(Qdrant Cloud\n37K+ Vectors)]
+        C --> F[(Neon Postgres\nChunk Metadata)]
+    end
+
     subgraph "Phase 2: Hybrid Retrieval"
-        G[User Query] --> H[Embed Query]
+        G[User Query + session_id] --> H[Embed Query]
         H -. Vector Search .-> E
         G -. BM25 Keyword Search .-> F
-        E --> I{MMR / Hybrid Fusion}
+        E --> I{Retrieval Fusion\nSimilarity · MMR · Hybrid}
         F --> I
     end
-    
+
     subgraph "Phase 3: LLM Generation"
-        I --> J[Prompt Builder]
+        I --> J[Prompt Builder\n+ Chat History Injection]
         J --> K[LLM Router Interface]
-        K --> L[Groq LLaMA 3.3]
-        L --> M[Structured JSON Response]
-        M --> N[(Neon Postgres Audit Log)]
+        K --> L1[Groq — Llama 3 8B/70B]
+        K --> L2[HuggingFace — Qwen 2.5/Zephyr]
+        L1 --> M[Streaming Answer\nSSE Tokens]
+        L2 --> M
+        M --> N[(Neon Postgres\nqa_logs + session_id)]
     end
-    
-    subgraph "Phase 4: Matrix Evaluation"
-        O[RAGAS Evaluation Module] -. Validates .-> J
+
+    subgraph "Phase 4: Conversational Memory"
+        N -. get_session_history .-> J
+        SIDEBAR -. GET /history/sessions .-> N
+        CHAT -. POST /query/stream .-> G
+    end
+
+    subgraph "Phase 5: Research Evaluation"
+        O[RAGAS + NLP Metrics\nROUGE · BLEU · BERTScore\nPrecision@K · MRR] -. Validates .-> J
         O -. Validates .-> I
-        P[Testset Generator] --> O
+        P[Testset Generator\n50 Synthetic QAs] --> O
+        Q[run_research.py\nPhase A/B/C/D] --> O
+        O --> R[(eval_results table)]
     end
-    
+
     class A,G,M main;
-    class E,F,N db;
-    class L,D,P ext;
+    class E,F,N,R db;
+    class L1,L2,D,P ext;
+    class U,CHAT,SIDEBAR,PARAMS ui;
+    class JWT,LOGIN auth;
 ```
+
+
+### Request Lifecycle (Chat Query)
+
+```
+Browser → POST /query/stream (query, session_id, llm_key, retriever_type, top_k)
+         ↓
+    JWT Auth Middleware validates Bearer token
+         ↓
+    DeepRAGPipeline.stream_rag_query_api()
+         ↓
+    ┌── Retrieval Engine ───────────────────────────────────┐
+    │  embed(query) → Qdrant nearest-neighbor search        │
+    │  (Similarity / MMR / Hybrid-BM25 depending on role)  │
+    └───────────────────────────────────────────────────────┘
+         ↓  top-K chunks
+    ┌── Session History ─────────────────────────────────────┐
+    │  get_session_history(session_id) → last 3 QA turns     │
+    │  format as "User: ...\nDeepRAG: ..." block             │
+    └────────────────────────────────────────────────────────┘
+         ↓  chat_history_str
+    ┌── Prompt Builder ──────────────────────────────────────┐
+    │  SYSTEM_PROMPT + retrieved_chunks + chat_history       │
+    │  + "Answer only from the context. Cite sources."       │
+    └────────────────────────────────────────────────────────┘
+         ↓  assembled prompt
+    LLM Router → Groq / HuggingFace API
+         ↓  token stream
+    SSE events: { event: "token", data: { token: "..." } }
+                { event: "done",  data: { sources, latency, record_id } }
+         ↓
+    _save_qa_background() → INSERT INTO qa_logs (session_id, user_id, ...)
+```
+
+---
+
+## 📂 Project Structure
+
+```
+OceanRAG/
+│
+├── api/                            # FastAPI Application Layer
+│   ├── main.py                     # App init, CORS, routers, pipeline singleton
+│   ├── dependencies.py             # get_current_user, get_pipeline injectors
+│   ├── auth/                       # JWT token logic
+│   ├── middleware/                 # Rate limiting, logging middleware
+│   └── routers/
+│       ├── auth.py                 # POST /auth/login, /auth/register
+│       ├── query.py                # POST /query, /query/stream (SSE)
+│       ├── history.py              # GET /history/sessions, /sessions/{id}
+│       ├── feedback.py             # POST /feedback/ (thumbs up/down)
+│       └── eval_results.py         # GET /eval-results/ leaderboard
+│
+├── core/                           # Shared domain utilities
+│   ├── config.py                   # CHUNK_CONFIGS, EMBEDDING_CONFIGS, LLM keys
+│   ├── database.py                 # SQLAlchemy tables + all CRUD functions
+│   │                               #   ↳ qa_logs (session_id, user_id)
+│   │                               #   ↳ get_user_sessions / get_session_history
+│   ├── document_loader.py          # PDF loader with timeout protection
+│   └── chunker.py                  # Fixed, Sentence, Recursive, Semantic chunkers
+│
+├── retrieval/
+│   └── retriever.py                # similarity_search, mmr_search, hybrid_search
+│
+├── generation/
+│   ├── generation_pipeline.py      # run_rag_query / stream_rag_query
+│   │                               #   ↳ fetches chat history → injects into prompt
+│   ├── prompt_builder.py           # SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
+│   │                               #   ↳ build_prompt(query, chunks, chat_history)
+│   ├── llm_handler.py              # Groq + HuggingFace API routers
+│   └── answer_store.py             # save_qa(session_id, user_id, ...)
+│
+├── pipeline/
+│   └── deeprag_pipeline.py         # DeepRAGPipeline master class
+│       ├── run_phase1()            # Ingest docs → embed → Qdrant + Postgres
+│       ├── run_phase2()            # Test all retrievers
+│       ├── run_rag_query()         # Sync API wrapper (accepts session_id)
+│       └── stream_rag_query_api()  # Streaming API wrapper (accepts session_id)
+│
+├── evaluation/
+│   ├── experiment_runner.py        # run_phase_a/b/c/d, run_single_experiment
+│   ├── testset_generator.py        # Groq-powered synthetic QA generation
+│   ├── metrics_calculator.py       # P@K, R@K, MRR, ROUGE-L, BLEU, BERTScore, RAGAS
+│   └── results_exporter.py         # CSV export, leaderboard, chart JSON
+│
+├── frontend/                       # React 18 + Vite + TailwindCSS + Framer Motion
+│   └── src/
+│       ├── pages/
+│       │   ├── Landing.jsx         # Animated hero page
+│       │   ├── Login.jsx           # Auth pages
+│       │   ├── Register.jsx
+│       │   ├── Chat.jsx            # Chat + sliding session sidebar + streaming
+│       │   ├── Dashboard.jsx       # Q&A log analytics
+│       │   └── EvalResults.jsx     # Research leaderboard UI
+│       ├── components/layout/
+│       │   ├── Navbar.jsx          # Top bar: Logo · Chat · Analytics · Research · Profile
+│       │   └── MainLayout.jsx      # Full-width layout (Navbar + Outlet)
+│       ├── api/client.js           # Axios base client with JWT interceptor
+│       └── store/authStore.js      # Zustand auth state (token, user, role)
+│
+├── docs/Publications/              # Input PDF research papers (not committed)
+├── output/                         # CSV exports, evaluation matrix results
+│
+├── run_phase1.py                   # CLI: Ingest documents
+├── run_research.py                 # CLI: Run phased evaluation (A/B/C/D or all)
+├── migrate_qa_logs.py              # One-time DB migration: add session_id, user_id
+├── requirements.txt
+├── pyproject.toml
+└── .env                            # API keys and DB connection strings
+```
+
+---
+
+
+
+## 🚀 Quick Start
+
+### Prerequisites
+| Service | Description | Free Tier |
+|---|---|---|
+| [Groq](https://console.groq.com/keys) | LLM inference API | ✅ Yes |
+| [Qdrant Cloud](https://cloud.qdrant.io/) | Vector database | ✅ Yes |
+| [Neon](https://neon.tech/) | Serverless Postgres | ✅ Yes |
+| Python 3.13+ | Runtime | — |
+| Node.js 18+ | Frontend build | — |
+
+### 1. Clone & Setup Backend
+```bash
+git clone https://github.com/sujalkamble007/OceanRAG.git
+cd OceanRAG
+
+python -m venv .venv
+source .venv/bin/activate          # macOS/Linux
+# .venv\Scripts\activate           # Windows
+
+pip install -r requirements.txt
+pip install -e .                   # Install oceanrag as a local package
+```
+
+### 2. Environment Variables
+Create a `.env` file in the project root:
+```env
+# ── Vector Database ──────────────────────────────────
+QDRANT_URL=https://your-cluster.cloud.qdrant.io
+QDRANT_API_KEY=your_qdrant_api_key
+QDRANT_COLLECTION_NAME=OceanRag
+
+# ── Relational Database (Neon Postgres) ──────────────
+DATABASE_URL=postgresql://user:password@ep-your-db.region.neon.tech/neondb?sslmode=require
+
+# ── LLMs ─────────────────────────────────────────────
+GROQ_API_KEY=your_groq_api_key
+HF_API_TOKEN=your_huggingface_token   # Optional
+
+# ── Auth ─────────────────────────────────────────────
+SECRET_KEY=a-long-random-secret-key
+```
+
+### 3. Ingest Documents
+Place your PDF files in `docs/Publications/`, then run the ingestion pipeline:
+```bash
+python run_phase1.py
+```
+This will chunk, embed, and index all documents into Qdrant and Postgres. *(One-time setup — skip if Qdrant already has vectors.)*
+
+### 4. Start the Backend (FastAPI)
+```bash
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+```
+API will be available at `http://localhost:8000/docs`
+
+### 5. Start the Frontend (React)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+App will be available at `http://localhost:5173`
+
+---
+
+## 📂 Project Structure
+
+```
+OceanRAG/
+├── api/                    # FastAPI Application
+│   ├── main.py             # App entry point, routers, pipeline injection
+│   └── routers/
+│       ├── auth.py         # JWT login/register endpoints
+│       ├── query.py        # /query and /query/stream endpoints
+│       ├── history.py      # /history/sessions chat memory endpoints
+│       ├── feedback.py     # Thumbs up/down rating endpoints
+│       └── eval_results.py # Evaluation result viewer endpoints
+│
+├── core/                   # Shared utilities
+│   ├── database.py         # SQLAlchemy models, CRUD, session history
+│   ├── config.py           # Chunk, embedding, LLM config constants
+│   ├── document_loader.py  # PDF parsing with timeout protection
+│   └── chunker.py          # Chunking strategies
+│
+├── retrieval/              # Retrieval engine
+│   └── retriever.py        # Similarity, MMR, Hybrid search
+│
+├── generation/             # Generation module
+│   ├── generation_pipeline.py  # run_rag_query, stream_rag_query with chat history
+│   ├── prompt_builder.py       # System + user prompt templates with history injection
+│   ├── llm_handler.py          # Groq / HuggingFace router
+│   └── answer_store.py         # qa_logs persistence with session_id
+│
+├── pipeline/
+│   └── deeprag_pipeline.py     # Master orchestrator class for the API
+│
+├── evaluation/             # Research Evaluation Framework
+│   ├── experiment_runner.py
+│   ├── testset_generator.py
+│   ├── metrics_calculator.py
+│   └── results_exporter.py
+│
+├── frontend/               # React + Vite SPA
+│   └── src/
+│       ├── pages/
+│       │   ├── Landing.jsx     # Animated landing page
+│       │   ├── Login.jsx       # Auth pages
+│       │   ├── Register.jsx
+│       │   ├── Chat.jsx        # Main chat interface + session sidebar
+│       │   ├── Dashboard.jsx   # Q&A analytics
+│       │   └── EvalResults.jsx # Research leaderboard
+│       ├── components/layout/
+│       │   ├── Navbar.jsx      # Top navbar with nav links + profile
+│       │   └── MainLayout.jsx  # Full-width layout wrapper
+│       ├── api/client.js       # Axios API client
+│       └── store/authStore.js  # Zustand auth state
+│
+├── run_phase1.py           # Document ingestion runner
+├── run_research.py         # Phased evaluation entry point
+└── migrate_qa_logs.py      # DB migration: adds session_id + user_id to qa_logs
+```
+
+---
+
+## 📡 API Reference
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/auth/register` | ❌ | Create a new user account |
+| `POST` | `/auth/login` | ❌ | Login and receive a JWT token |
+| `POST` | `/query` | ✅ | Run a full RAG query (sync) |
+| `POST` | `/query/stream` | ✅ | Run a RAG query with SSE streaming |
+| `GET` | `/history/sessions` | ✅ | List all past chat sessions for the current user |
+| `GET` | `/history/sessions/{session_id}` | ✅ | Get full chat history for a session |
+| `POST` | `/feedback/` | ✅ | Submit thumbs up/down rating for a Q&A record |
+| `GET` | `/eval-results/` | ✅ | Get research evaluation leaderboard |
+| `GET` | `/docs` | ❌ | Swagger interactive API documentation |
+
+### Example: Start a Chat Session
+```bash
+# 1. Login
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com", "password": "yourpassword"}'
+
+# 2. Query (with session_id for Conversational Memory)
+curl -X POST http://localhost:8000/query \
+  -H "Authorization: Bearer <your_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What are the environmental obligations under UNCLOS Article 145?",
+    "session_id": "550e8400-e29b-41d4-a716-446655440000",
+    "llm_key": "groq-llama8b",
+    "retriever_type": "mmr",
+    "top_k": 5
+  }'
+```
+
+---
+
+## 👤 User Roles
+
+| Role | Chat | MMR/Hybrid | All LLMs | Eval Matrix | Top-K |
+|------|------|------------|----------|-------------|-------|
+| `common_user` | ✅ | ❌ | ❌ | ❌ | 1–3 |
+| `student` | ✅ | ✅ | ❌ | ❌ | 1–5 |
+| `researcher` | ✅ | ✅ | ✅ | ✅ | 1–10 |
+| `admin` | ✅ | ✅ | ✅ | ✅ | 1–10 |
+
+---
+
+## 🔬 Running the Research Evaluation
+
+```bash
+# Generate a 50-question synthetic testset
+python run_research.py --generate-testset
+
+# Run Phase A (Chunking strategy comparison)
+python run_research.py --phase A
+
+# Run all 4 phases sequentially (A → B → C → D)
+python run_research.py --phase all
+
+# Export results to CSV
+python run_research.py --export
+```
+
+Results are saved to `output/` as CSVs and stored in the `eval_results` Postgres table, viewable in the **Research Results** page of the frontend.
+
+---
+
+## 🧠 How Conversational Memory Works
+
+1. When a user opens the Chat page, a new `session_id` (UUID) is generated in the browser.
+2. Every query sent to `/query/stream` includes this `session_id`.
+3. The backend saves each QA turn to the `qa_logs` table with the `session_id`.
+4. On the **next query in the same session**, the backend calls `get_session_history()` to fetch the last 3 turns, formats them as a `User: / DeepRAG:` block, and injects them into the LLM prompt.
+5. The frontend sidebar fetches `/history/sessions` to list all past chats.
+6. Clicking a session restores the full history by calling `/history/sessions/{session_id}`.
+
+---
+
+## 🎓 Key Design Decisions
+
+- **Session memory via DB, not in-memory** — ensures history survives page refreshes and server restarts
+- **Background thread for DB saves** — the `_save_qa_background` function runs in a `ThreadPoolExecutor` so it never blocks the streaming response
+- **Hybrid retrieval default** — provides best-of-both-worlds for legal/technical text where exact term matching matters
+- **Role-gated compute** — heavier models (70B) and retrieval methods are reserved for trusted roles to control API costs
+- **Framer Motion sidebar** — the session sidebar slides with an `AnimatePresence` width transition, matching a native app feel
 
 ---
 
 <div align="center">
   <p><em>"The best way to understand something is to build it."</em></p>
   <p>Built with care by <strong>Sujal Kamble</strong></p>
-  <p>OceanRAG — find exactly what matters in the deepest of oceans.</p>
+  <p>OceanRAG — find exactly what matters in the deepest of oceans. 🌊</p>
 </div>

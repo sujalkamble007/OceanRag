@@ -51,24 +51,39 @@ def compute_hit_rate(retrieved_ids: list, relevant_ids: list) -> float:
     return 1.0 if any(r in set(relevant_ids) for r in retrieved_ids) else 0.0
 
 
+import string
+
 def find_relevant_chunk_ids(ground_truth: str, chunks: list, threshold: float = 0.6) -> list:
     """
-    Finds which chunks are ground-truth relevant by token overlap.
+    Finds which chunks are ground-truth relevant by substring match or token overlap.
     Falls back to first chunk if none meet threshold.
     """
     relevant = []
-    gt_tokens = set(str(ground_truth).lower().split())
-
-    if not gt_tokens:
+    
+    gt_str = str(ground_truth).lower().strip()
+    if not gt_str:
         if chunks:
             return [chunks[0].metadata.get("chunk_id", "chunk_0")]
         return []
 
+    # Strip punctuation for token overlap
+    translator = str.maketrans('', '', string.punctuation)
+    gt_tokens = set(gt_str.translate(translator).split())
+
     for chunk in chunks:
-        chunk_tokens = set(chunk.page_content.lower().split())
-        overlap = len(gt_tokens & chunk_tokens) / len(gt_tokens)
-        if overlap >= threshold:
+        chunk_str = chunk.page_content.lower()
+        
+        # 1. Exact substring match (common for synthetic QA)
+        if gt_str in chunk_str and len(gt_str) > 3:
             relevant.append(chunk.metadata.get("chunk_id", ""))
+            continue
+            
+        # 2. Token overlap fallback
+        chunk_tokens = set(chunk_str.translate(translator).split())
+        if gt_tokens and chunk_tokens:
+            overlap = len(gt_tokens & chunk_tokens) / len(gt_tokens)
+            if overlap >= threshold:
+                relevant.append(chunk.metadata.get("chunk_id", ""))
 
     # Fallback: if nothing matched, use first chunk
     if not relevant and chunks:

@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ocean-900: #0a192f;
-  --color-ocean-800: #112240;
-  --color-ocean-700: #233554;
-  --color-ocean-400: #64ffda;
+  --color-ocean-900: #0a1128; /* Deep Midnight Ocean */
+  --color-ocean-800: #162447; /* Nautical Premium Surface */
+  --color-ocean-700: #1f4068; /* Maritime Borders / Accents */
+  --color-ocean-400: #00d2ff; /* Bioluminescent Tech Blue */
   --font-sans: 'Inter', system-ui, sans-serif;
 }
 

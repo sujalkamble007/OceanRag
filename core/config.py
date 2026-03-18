@@ -42,13 +42,17 @@ CHUNK_CONFIGS = [
     {"name": "overlap_512_10", "size": 512,  "overlap": 51},
     {"name": "overlap_512_20", "size": 512,  "overlap": 102},
     {"name": "overlap_512_30", "size": 512,  "overlap": 153},
+    {"name": "sentence",       "size": 512,  "overlap": 0, "type": "sentence"},
+    {"name": "recursive_auto", "size": 1000, "overlap": 200},
 ]
 
 # ── Embedding Configs ────────────────────────────────────
 EMBEDDING_CONFIGS = [
-    {"name": "MiniLM", "model_id": "sentence-transformers/all-MiniLM-L6-v2", "vector_size": 384},
-    {"name": "BGE",    "model_id": "BAAI/bge-small-en-v1.5",                  "vector_size": 384},
-    {"name": "SBERT",  "model_id": "sentence-transformers/all-mpnet-base-v2", "vector_size": 768},
+    {"name": "MiniLM",     "model_id": "sentence-transformers/all-MiniLM-L6-v2",  "vector_size": 384},
+    {"name": "BGE",        "model_id": "BAAI/bge-small-en-v1.5",                   "vector_size": 384},
+    {"name": "SBERT",      "model_id": "sentence-transformers/all-mpnet-base-v2",  "vector_size": 768},
+    {"name": "Instructor", "model_id": "hkunlp/instructor-base",                   "vector_size": 768},
+    {"name": "E5-Small",   "model_id": "intfloat/e5-small-v2",                     "vector_size": 384},
 ]
 
 # ── Defaults ─────────────────────────────────────────────

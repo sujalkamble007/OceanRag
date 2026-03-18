@@ -45,7 +45,7 @@ def similarity_search(client: QdrantClient, collection_name: str,
             "filename": hit.payload.get("filename", ""),
             "page_number": hit.payload.get("page_number", 0),
             "chunk_strategy": hit.payload.get("chunk_strategy", ""),
-            "page_content": hit.payload.get("content_preview", ""),
+            "page_content": hit.payload.get("page_content", ""),
             "retriever_type": "similarity",
         })
 
@@ -115,7 +115,7 @@ def mmr_search(client: QdrantClient, collection_name: str,
             "filename": s["payload"].get("filename", ""),
             "page_number": s["payload"].get("page_number", 0),
             "chunk_strategy": s["payload"].get("chunk_strategy", ""),
-            "page_content": s["payload"].get("content_preview", ""),
+            "page_content": s["payload"].get("page_content", ""),
             "retriever_type": "mmr",
         })
 
@@ -190,7 +190,7 @@ def hybrid_search(client: QdrantClient, collection_name: str,
             "filename": payload.get("filename", ""),
             "page_number": payload.get("page_number", 0),
             "chunk_strategy": payload.get("chunk_strategy", ""),
-            "page_content": payload.get("content_preview", ""),
+            "page_content": payload.get("page_content", ""),
             "retriever_type": "hybrid",
         })
 

@@ -17,11 +17,12 @@ def _timeout_handler(signum, frame):
     raise PDFTimeoutError("PDF loading timed out")
 
 
-def load_documents(docs_dir: str, timeout_per_pdf: int = 60) -> list:
+def load_documents(docs_dir: str, timeout_per_pdf: int = 60, max_docs: int = 0) -> list:
     """
     Scans docs_dir recursively for .pdf files, loads each with PyPDFLoader,
     and enriches metadata with filename, filepath, and 1-indexed page_number.
     Skips PDFs that take longer than timeout_per_pdf seconds to parse.
+    If max_docs > 0, stops loading after max_docs documents.
     Returns a list of LangChain Document objects.
     """
     docs_path = Path(docs_dir)
@@ -30,6 +31,10 @@ def load_documents(docs_dir: str, timeout_per_pdf: int = 60) -> list:
     if not pdf_files:
         print(f"⚠️  No PDF files found in '{docs_dir}'")
         return []
+
+    if max_docs > 0:
+        pdf_files = pdf_files[:max_docs]
+        print(f"⏩ Fast Mode: Limiting to {max_docs} document(s).")
 
     print(f"📂 Found {len(pdf_files)} PDF(s). Loading...")
 

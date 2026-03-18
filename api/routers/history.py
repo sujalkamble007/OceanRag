@@ -4,9 +4,26 @@ api/routers/history.py — Q&A history endpoints.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, delete
 from api.dependencies import get_current_user, require_role
-from core.database import get_engine, qa_logs_table
+from core.database import get_engine, qa_logs_table, get_user_sessions, get_session_history
 
 router = APIRouter(prefix="/history", tags=["history"])
+
+
+@router.get("/sessions")
+def get_sessions(current_user: dict = Depends(get_current_user)):
+    """Returns a list of all chat sessions for the current user."""
+    sessions = get_user_sessions(current_user["id"])
+    return {"sessions": sessions}
+
+
+@router.get("/sessions/{session_id}")
+def get_session_details(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Returns the full chat history for a specific session."""
+    history = get_session_history(session_id, current_user["id"])
+    if not history:
+        raise HTTPException(status_code=404, detail="Session not found or empty")
+    return {"history": history}
+
 
 
 @router.get("/")
