@@ -8,6 +8,7 @@ const Navbar = () => {
 
     const handleLogout = () => {
         logout();
+        localStorage.removeItem('oceanrag_last_session');
         window.location.href = '/login';
     };
 

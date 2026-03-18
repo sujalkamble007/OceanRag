@@ -21,6 +21,7 @@ const Chat = () => {
         try {
             const { data } = await apiClient.get('/history/sessions');
             setSessions(data.sessions || []);
+            // Removed auto-loading logic to ensure every start is a "New Chat"
         } catch (err) {
             console.error("Failed to load sessions:", err);
         }
@@ -30,8 +31,16 @@ const Chat = () => {
         loadSessions();
     }, []);
 
+    useEffect(() => {
+        if (sessionId) {
+            localStorage.setItem('oceanrag_last_session', sessionId);
+        }
+    }, [sessionId]);
+
     const handleNewChat = () => {
-        setSessionId(crypto.randomUUID());
+        const newId = crypto.randomUUID();
+        setSessionId(newId);
+        localStorage.setItem('oceanrag_last_session', newId);
         setMessages([{ role: 'assistant', content: 'Hello! I am the OceanRAG assistant. Ask me anything about Deep-Sea Governance & UNCLOS regulations.' }]);
         setInput('');
     };
