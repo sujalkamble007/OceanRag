@@ -280,17 +280,13 @@ OceanRAG/
 | Python 3.13+ | Runtime | — |
 | Node.js 18+ | Frontend build | — |
 
-### 1. Clone & Setup Backend
+### 1. Cloning & Setup
 ```bash
 git clone https://github.com/sujalkamble007/OceanRAG.git
 cd OceanRAG
-
 python -m venv .venv
-source .venv/bin/activate          # macOS/Linux
-# .venv\Scripts\activate           # Windows
-
+source .venv/bin/activate  # Mac/Linux
 pip install -r requirements.txt
-pip install -e .                   # Install oceanrag as a local package
 ```
 
 ### 2. Environment Variables

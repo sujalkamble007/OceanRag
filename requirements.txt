@@ -1,4 +1,5 @@
-# requirements.txt
+# OceanRAG Requirements (Local Dev)
+# Standard version with full ML support
 
 # Core
 langchain
@@ -6,41 +7,21 @@ langchain-community
 langchain-huggingface
 langchain-groq
 langchain-qdrant
+torch
+sentence-transformers
+tqdm
+pypdf
 
 # Vector DB
 qdrant-client
 
-# Document loading
-pypdf
-python-docx
-pandas
-
-# Embeddings
-sentence-transformers
-faiss-cpu
-rank_bm25
-
-# LLMs
-groq
+# Utils
 requests
-
-# Database
+python-dotenv
 psycopg2-binary
 sqlalchemy
-python-dotenv
-
-# Evaluation
-ragas
-datasets
-rouge-score
-nltk
-bert-score
-evaluate
-
-# Utils
-tqdm
-torch
-numpy
+rank_bm25
+pandas
 
 # Phase 5 Backend
 fastapi==0.109.2

@@ -59,10 +59,20 @@ const Chat = () => {
         }
     };
 
-    // Controls
+    // Controls - Initialize role-aware defaults
     const [llmKey, setLlmKey] = useState('groq-llama8b');
-    const [retrieverType, setRetrieverType] = useState('mmr');
-    const [topK, setTopK] = useState(5);
+    const [retrieverType, setRetrieverType] = useState(user?.role === 'common_user' ? 'similarity' : 'mmr');
+    const [topK, setTopK] = useState(user?.role === 'common_user' ? 2 : 5);
+
+    // Sync defaults if user object loads late or changes
+    useEffect(() => {
+        if (user) {
+            if (user.role === 'common_user') {
+                setRetrieverType('similarity');
+                setTopK(prev => Math.min(prev, 3));
+            }
+        }
+    }, [user]);
 
     const endOfMessagesRef = useRef(null);
 
