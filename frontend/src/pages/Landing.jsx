@@ -46,9 +46,9 @@ const Landing = () => {
             </div>
             <span className="font-bold text-xl tracking-tight text-white flex items-center">
               Ocean<span className="text-ocean-400">RAG</span>
-              <span className="ml-3 px-2 py-0.5 rounded-full bg-ocean-800 border border-ocean-700 text-[10px] text-ocean-400 uppercase tracking-wider font-semibold">
+              {/* <span className="ml-3 px-2 py-0.5 rounded-full bg-ocean-800 border border-ocean-700 text-[10px] text-ocean-400 uppercase tracking-wider font-semibold">
                 Beta
-              </span>
+              </span> */}
             </span>
           </div>
 
